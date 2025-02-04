@@ -83,7 +83,7 @@ export default function Login({ providers }) {
 }
 
 // Fetch providers on the server-side.
-export async function getStaticProps() {
+export async function getServerSideProps() {
   const providers = await getProviders();
   return {
     props: { providers },
