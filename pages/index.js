@@ -1,6 +1,7 @@
 // pages/index.js
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import OrderButton from "../components/OrderButton"; // Ensure this file exists
 
 // Helper function to format an ISO date string to Singapore time (dd/mm/yyyy hh:mm)
@@ -79,14 +80,13 @@ export default function Home() {
   }, []);
 
   const handleFetchAndSaveOrders = () => {
-    // Set isLoading to true immediately so the spinner appears while waiting.
+    // Set isLoading to true so the spinner appears during the refresh
     setIsLoading(true);
     fetch(`${API_URL}?action=fetchAndSaveOrders`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
           alert("Orders fetched and saved successfully!");
-          // Now re-fetch the orders (which will update isLoading accordingly)
           fetchOrders();
         } else {
           alert("Failed to fetch and save orders: " + data.error);
@@ -181,7 +181,7 @@ export default function Home() {
       {/* Main Content Container with extra top margin */}
       <div
         style={{
-          marginTop: "100px",
+          marginTop: "100px", // Ensure content starts below the fixed search bar
           padding: "20px",
         }}
       >
@@ -368,9 +368,22 @@ export default function Home() {
           </div>
         )}
 
-        {displayPending.length === 0 &&
-          displayDone.length === 0 &&
-          currentFilter !== "All" && <p>No orders match the current filter.</p>}
+        {/* Log Out Button at the Bottom */}
+        <div style={{ marginTop: "40px", textAlign: "center" }}>
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            style={{
+              padding: "10px 20px",
+              fontSize: "1rem",
+              backgroundColor: "#dfe5f1",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Log Out
+          </button>
+        </div>
       </div>
     </div>
   );
