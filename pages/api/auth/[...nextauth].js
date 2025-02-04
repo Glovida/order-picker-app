@@ -43,4 +43,16 @@ export default NextAuth({
   pages: {
     signIn: "/login", // Custom login page
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production", // use secure cookies only in production
+      },
+    },
+  },
+  debug: true, // Enable debug logging to see more info in your console/logs
 });
