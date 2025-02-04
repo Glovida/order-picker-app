@@ -69,9 +69,7 @@ export default function OrderDetailClient({ order, apiUrl }) {
     try {
       const response = await fetch("/api/updateStatus", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderNumber: order.orderNumber }),
       });
       const result = await response.json();
@@ -90,81 +88,84 @@ export default function OrderDetailClient({ order, apiUrl }) {
   if (!order) return <p>Loading order details...</p>;
 
   return (
-    <>
-      {/* Main Content Container */}
-      <div
-        style={{
-          padding: "20px",
-          fontFamily: "Arial, sans-serif",
-          paddingBottom: "140px", // Extra bottom padding to ensure content isn't hidden by the fixed bottom section
-        }}
-      >
-        {/* Back Button */}
-        <div style={{ marginBottom: "20px" }}>
-          <Link href="/">
-            <button style={{ padding: "8px 16px", fontSize: "1rem" }}>
-              Back
-            </button>
-          </Link>
-        </div>
+    <div
+      style={{
+        padding: "20px",
+        fontFamily: "Arial, sans-serif",
+        paddingBottom: "140px",
+      }}
+    >
+      {/* Back Button */}
+      <div style={{ marginBottom: "20px" }}>
+        <Link href="/">
+          <button style={{ padding: "8px 16px", fontSize: "1rem" }}>
+            Back
+          </button>
+        </Link>
+      </div>
 
-        <h1>Order {order.orderNumber}</h1>
-        <h2>Items to Pick:</h2>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {order.items.map((item) => {
-            const normalizedBarcode = String(item.productBarcode || "")
-              .trim()
-              .toUpperCase();
-            const required = Number(item.realQuantity);
-            const scanned = scanCounts[normalizedBarcode] || 0;
-            const progressPercent = Math.min((scanned / required) * 100, 100);
-            return (
-              <li key={normalizedBarcode} style={{ marginBottom: "20px" }}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  {item.frontImage && (
-                    <img
-                      src={item.frontImage}
-                      alt={item.productName}
-                      style={{
-                        width: "100px",
-                        height: "auto",
-                        marginRight: "10px",
-                      }}
-                    />
-                  )}
-                  <div>
-                    <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
-                      {item.productName}
-                    </div>
-                    <div>
-                      Required: {required} | Scanned: {scanned}
-                    </div>
+      <h1>Order {order.orderNumber}</h1>
+      {/* New Info Line for Platform and Tracking Number */}
+      <p style={{ fontSize: "1rem", marginBottom: "20px" }}>
+        {order.platform} | Tracking No.: {order.trackingNumber}
+      </p>
+
+      <h2>Items to Pick:</h2>
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {order.items.map((item) => {
+          const normalizedBarcode = String(item.productBarcode || "")
+            .trim()
+            .toUpperCase();
+          const required = Number(item.realQuantity);
+          const scanned = scanCounts[normalizedBarcode] || 0;
+          const progressPercent = Math.min((scanned / required) * 100, 100);
+          return (
+            <li key={normalizedBarcode} style={{ marginBottom: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                {item.frontImage && (
+                  <img
+                    src={item.frontImage}
+                    alt={item.productName}
+                    style={{
+                      width: "100px",
+                      height: "auto",
+                      marginRight: "10px",
+                    }}
+                  />
+                )}
+                <div>
+                  <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+                    {item.productName}
+                  </div>
+                  <div style={{ fontSize: "1rem" }}>
+                    {item.realSkuNumber} | Required: {required} | Scanned:{" "}
+                    {scanned}
                   </div>
                 </div>
-                {/* Progress Bar */}
+              </div>
+              {/* Progress Bar */}
+              <div
+                style={{
+                  marginTop: "8px",
+                  width: "100%",
+                  height: "10px",
+                  backgroundColor: "#dfe5f1",
+                  borderRadius: "5px",
+                  overflow: "hidden",
+                }}
+              >
                 <div
                   style={{
-                    marginTop: "8px",
-                    width: "100%",
-                    height: "10px",
-                    backgroundColor: "#dfe5f1",
-                    borderRadius: "5px",
-                    overflow: "hidden",
+                    width: `${progressPercent}%`,
+                    height: "100%",
+                    backgroundColor: "#2d3a55",
                   }}
-                >
-                  <div
-                    style={{
-                      width: `${progressPercent}%`,
-                      height: "100%",
-                      backgroundColor: "#2d3a55",
-                    }}
-                  ></div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+                ></div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
 
       {/* Fixed "Scan Products" Section at the Bottom */}
       <div
@@ -183,10 +184,12 @@ export default function OrderDetailClient({ order, apiUrl }) {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            justifyContent: "space-between",
           }}
         >
-          <BarcodeInput onBarcodeScanned={handleBarcodeScanned} />
+          <div style={{ flex: 1 }}>
+            <BarcodeInput onBarcodeScanned={handleBarcodeScanned} />
+          </div>
           {isComplete && (
             <button
               onClick={handleConfirm}
@@ -197,6 +200,7 @@ export default function OrderDetailClient({ order, apiUrl }) {
                 border: "none",
                 borderRadius: "4px",
                 cursor: "pointer",
+                marginLeft: "10px",
               }}
             >
               Confirm Order Picking
@@ -204,6 +208,6 @@ export default function OrderDetailClient({ order, apiUrl }) {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
