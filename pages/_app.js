@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import Head from "next/head";
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
@@ -27,6 +28,9 @@ export default function App({ Component, pageProps }) {
   return (
     <>
       {loading && <LoadingOverlay />}
+      <Head>
+        <title>Glovida Internal App</title>
+      </Head>
       <Component {...pageProps} />
     </>
   );
