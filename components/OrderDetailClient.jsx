@@ -41,12 +41,18 @@ export default function OrderDetailClient({ order, apiUrl }) {
 
     if (item) {
       setScanCounts((prev) => {
-        const newCount = (prev[scannedCode] || 0) + 1;
+        const currentCount = prev[scannedCode] || 0;
+        const required = Number(item.realQuantity);
+        if (currentCount >= required) {
+          window.alert("Scanned too many times. Please check quantity.");
+          return prev;
+        }
+        const newCount = currentCount + 1;
         console.log(`Incrementing count for ${scannedCode}: ${newCount}`);
         return { ...prev, [scannedCode]: newCount };
       });
     } else {
-      console.log("No matching item found for barcode:", scannedCode);
+      window.alert("Wrong item scanned. Please scan correct item.");
     }
   };
 
@@ -69,7 +75,9 @@ export default function OrderDetailClient({ order, apiUrl }) {
     try {
       const response = await fetch("/api/updateStatus", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ orderNumber: order.orderNumber }),
       });
       const result = await response.json();

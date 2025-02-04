@@ -1,8 +1,8 @@
 // pages/index.js
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
 import OrderButton from "../components/OrderButton"; // Ensure this file exists
+import ScrollToTop from "../components/ScrollToTop"; // Import the new component
 
 // Helper function to format an ISO date string to Singapore time (dd/mm/yyyy hh:mm)
 function formatSingaporeTime(dateString) {
@@ -20,43 +20,10 @@ function formatSingaporeTime(dateString) {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Inline spinner component (centered)
-const Spinner = () => (
-  <div
-    style={{
-      backgroundColor: "#ffffff",
-      minHeight: "100vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <div
-      style={{
-        display: "inline-block",
-        width: "50px",
-        height: "50px",
-        border: "6px solid #dfe5f1",
-        borderTopColor: "#2d3a55",
-        borderRadius: "50%",
-        animation: "spin 1s linear infinite",
-      }}
-    ></div>
-    <style jsx>{`
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-    `}</style>
-  </div>
-);
-
 export default function Home() {
   const [orders, setOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  // currentFilter can be "All", "Shopee", "Lazada", "Shopify", "TikTok", or "Done"
   const [currentFilter, setCurrentFilter] = useState("All");
 
   const fetchOrders = () => {
@@ -80,7 +47,6 @@ export default function Home() {
   }, []);
 
   const handleFetchAndSaveOrders = () => {
-    // Set isLoading to true so the spinner appears during the refresh
     setIsLoading(true);
     fetch(`${API_URL}?action=fetchAndSaveOrders`)
       .then((res) => res.json())
@@ -140,10 +106,39 @@ export default function Home() {
     return acc;
   }, {});
 
-  // Define filter buttons.
-  // When selected, background: #2d3a55, text: #ffffff.
-  // When not selected, background: #dfe5f1, text: #000000.
   const filters = ["All", "Shopee", "Lazada", "Shopify", "TikTok", "Done"];
+
+  // Inline spinner component
+  const Spinner = () => (
+    <div
+      style={{
+        backgroundColor: "#ffffff",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <div
+        style={{
+          display: "inline-block",
+          width: "50px",
+          height: "50px",
+          border: "6px solid #dfe5f1",
+          borderTopColor: "#2d3a55",
+          borderRadius: "50%",
+          animation: "spin 1s linear infinite",
+        }}
+      ></div>
+      <style jsx>{`
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
+    </div>
+  );
 
   if (isLoading) {
     return <Spinner />;
@@ -179,12 +174,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Container with extra top margin */}
-      <div
-        style={{
-          marginTop: "100px", // Ensure content starts below the fixed search bar
-          padding: "20px",
-        }}
-      >
+      <div style={{ marginTop: "100px", padding: "20px" }}>
         {/* Refresh Button */}
         <div style={{ marginBottom: "20px" }}>
           <button
@@ -385,6 +375,7 @@ export default function Home() {
           </button>
         </div>
       </div>
+      <ScrollToTop />
     </div>
   );
 }
