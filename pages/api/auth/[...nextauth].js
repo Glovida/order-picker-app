@@ -54,5 +54,4 @@ export default NextAuth({
       },
     },
   },
-  debug: true, // Enable debug logging to see more info in your console/logs
 });
