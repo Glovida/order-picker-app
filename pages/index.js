@@ -81,6 +81,14 @@ export default function Home() {
     (order) => String(order.status || "").toLowerCase() === "done"
   );
 
+  // Calculate the overall pending orders per platform regardless of the current filter.
+  const allPendingByPlatform = pendingOrders.reduce((acc, order) => {
+    const platform = order.platform;
+    if (!acc[platform]) acc[platform] = [];
+    acc[platform].push(order);
+    return acc;
+  }, {});
+
   let displayPending = [];
   let displayDone = [];
 
@@ -194,27 +202,62 @@ export default function Home() {
         </div>
 
         {/* Filter Buttons */}
-        <div style={{ marginBottom: "20px" }}>
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setCurrentFilter(filter)}
-              style={{
-                padding: "8px 16px",
-                marginRight: "10px",
-                marginBottom: "10px",
-                fontSize: "1rem",
-                backgroundColor:
-                  currentFilter === filter ? "#2d3a55" : "#dfe5f1",
-                color: currentFilter === filter ? "#ffffff" : "#000000",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              {filter}
-            </button>
-          ))}
+        <div
+          style={{
+            marginBottom: "20px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "10px",
+          }}
+        >
+          {filters.map((filter) => {
+            let count = 0;
+            if (filter === "All") {
+              count = orders.length;
+            } else if (filter === "Done") {
+              count = doneOrders.length;
+            } else {
+              // Use the overall pending count for the specific platform
+              count = allPendingByPlatform[filter]
+                ? allPendingByPlatform[filter].length
+                : 0;
+            }
+            return (
+              <button
+                key={filter}
+                onClick={() => setCurrentFilter(filter)}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: "1rem",
+                  backgroundColor:
+                    currentFilter === filter ? "#2d3a55" : "#dfe5f1",
+                  color: currentFilter === filter ? "#ffffff" : "#000000",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  style={{
+                    backgroundColor: "#ffffff",
+                    color: "#2d3a55",
+                    border: "1px solid #2d3a55",
+                    padding: "2px 6px",
+                    borderRadius: "3px",
+                    marginRight: "5px",
+                    fontSize: "0.8rem",
+                    minWidth: "20px",
+                    textAlign: "center",
+                  }}
+                >
+                  {count}
+                </span>
+                {filter}
+              </button>
+            );
+          })}
         </div>
 
         {/* Display Orders Based on Filter */}
