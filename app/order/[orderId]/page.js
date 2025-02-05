@@ -1,53 +1,34 @@
 "use client";
 
-import { useParams } from "next/navigation"; // Use next/navigation for dynamic route params
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import OrderDetailClient from "../../../components/OrderDetailClient"; // Adjust the relative path as needed
+import OrderDetailClient from "../../../components/OrderDetailClient";
+import Spinner from "../../../components/Spinner";
+import { useOrders } from "../../../components/OrdersContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Inline Spinner component
-const Spinner = () => (
-  <div
-    style={{
-      backgroundColor: "#ffffff",
-      minHeight: "100vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <div
-      style={{
-        display: "inline-block",
-        width: "50px",
-        height: "50px",
-        border: "6px solid #dfe5f1",
-        borderTopColor: "#2d3a55",
-        borderRadius: "50%",
-        animation: "spin 1s linear infinite",
-      }}
-    ></div>
-    <style jsx>{`
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-    `}</style>
-  </div>
-);
-
 export default function OrderDetail() {
-  const { orderId } = useParams(); // Retrieve the orderId from the dynamic route
+  const { orderId } = useParams();
+  const { orders } = useOrders();
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
+    // Try to find the order in the context
+    if (orders && orders.length > 0) {
+      const found = orders.find(
+        (o) => String(o.orderNumber).trim() === String(orderId).trim()
+      );
+      if (found) {
+        setOrder(found);
+        return;
+      }
+    }
+    // If not found in context, fetch the order data from the API
     if (orderId) {
       fetch(API_URL)
         .then((res) => res.json())
         .then((data) => {
-          // Convert both values to strings and trim them before comparing.
           const found = data.orders.find(
             (o) => String(o.orderNumber).trim() === String(orderId).trim()
           );
@@ -57,9 +38,9 @@ export default function OrderDetail() {
         })
         .catch((err) => console.error("Error fetching order:", err));
     }
-  }, [orderId]);
+  }, [orderId, orders]);
 
-  if (!order) return <Spinner />;
+  if (!order) return <Spinner minHeight="100vh" />;
 
   return <OrderDetailClient order={order} apiUrl={API_URL} />;
 }

@@ -1,4 +1,8 @@
 // app/layout.js
+import { Providers } from "./providers";
+import "/styles/globals.css";
+import "/styles/Home.module.css";
+
 export const metadata = {
   title: "Glovida Internal App",
   description: "Internal app for order picking",
@@ -21,7 +25,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
       </head>
-      <body style={{ backgroundColor: "#ffffff" }}>{children}</body>
+      <body style={{ backgroundColor: "#ffffff" }}>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

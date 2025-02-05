@@ -1,28 +1,42 @@
-// components/OrderDetailClient.jsx
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useEffect, useState, useMemo, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BarcodeInput from "./BarcodeInput";
+import dynamic from "next/dynamic";
+import Spinner from "./Spinner";
+
+// Lazy load the ItemList component.
+const ItemList = dynamic(() => import("./ItemList"), {
+  ssr: false,
+  loading: () => <Spinner minHeight="100px" />,
+});
 
 export default function OrderDetailClient({ order, apiUrl }) {
   const router = useRouter();
   const [scanCounts, setScanCounts] = useState({});
   const [isComplete, setIsComplete] = useState(false);
 
-  // Initialize scan counts for each item when the order loads.
-  useEffect(() => {
-    if (order) {
-      const initialCounts = {};
-      order.items.forEach((item) => {
-        const normalizedBarcode = String(item.productBarcode || "")
-          .trim()
-          .toUpperCase();
-        initialCounts[normalizedBarcode] = 0;
-      });
-      setScanCounts(initialCounts);
-    }
+  // Pre-compute a lookup for normalised barcodes.
+  const barcodeLookup = useMemo(() => {
+    const lookup = {};
+    order.items.forEach((item) => {
+      const normalizedBarcode = String(item.productBarcode || "")
+        .trim()
+        .toUpperCase();
+      lookup[normalizedBarcode] = item;
+    });
+    return lookup;
   }, [order]);
+
+  // Initialise scan counts for each item.
+  useEffect(() => {
+    const initialCounts = {};
+    Object.keys(barcodeLookup).forEach((barcode) => {
+      initialCounts[barcode] = 0;
+    });
+    setScanCounts(initialCounts);
+  }, [barcodeLookup]);
 
   // Increase the count for a matching product when a barcode is scanned.
   const handleBarcodeScanned = (barcode) => {
@@ -32,12 +46,7 @@ export default function OrderDetailClient({ order, apiUrl }) {
       .toUpperCase();
     console.log("Handling scanned code:", scannedCode);
 
-    const item = order.items.find((i) => {
-      const normalizedStored = String(i.productBarcode || "")
-        .trim()
-        .toUpperCase();
-      return normalizedStored === scannedCode;
-    });
+    const item = barcodeLookup[scannedCode];
 
     if (item) {
       setScanCounts((prev) => {
@@ -58,17 +67,15 @@ export default function OrderDetailClient({ order, apiUrl }) {
 
   // Check if all items have been scanned the required number of times.
   useEffect(() => {
-    if (order) {
-      const complete = order.items.every((item) => {
-        const required = Number(item.realQuantity);
-        const normalizedBarcode = String(item.productBarcode || "")
-          .trim()
-          .toUpperCase();
-        const scanned = scanCounts[normalizedBarcode] || 0;
-        return scanned >= required;
-      });
-      setIsComplete(complete);
-    }
+    const complete = order.items.every((item) => {
+      const required = Number(item.realQuantity);
+      const normalizedBarcode = String(item.productBarcode || "")
+        .trim()
+        .toUpperCase();
+      const scanned = scanCounts[normalizedBarcode] || 0;
+      return scanned >= required;
+    });
+    setIsComplete(complete);
   }, [scanCounts, order]);
 
   const handleConfirm = async () => {
@@ -113,69 +120,18 @@ export default function OrderDetailClient({ order, apiUrl }) {
       </div>
 
       <h1>Order {order.orderNumber}</h1>
-      {/* New Info Line for Platform and Tracking Number */}
+      {/* Platform and Tracking Number Info */}
       <p style={{ fontSize: "1rem", marginBottom: "20px" }}>
         {order.platform} | Tracking No.: {order.trackingNumber}
       </p>
 
       <h2>Items to Pick:</h2>
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {order.items.map((item) => {
-          const normalizedBarcode = String(item.productBarcode || "")
-            .trim()
-            .toUpperCase();
-          const required = Number(item.realQuantity);
-          const scanned = scanCounts[normalizedBarcode] || 0;
-          const progressPercent = Math.min((scanned / required) * 100, 100);
-          return (
-            <li key={normalizedBarcode} style={{ marginBottom: "20px" }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                {item.frontImage && (
-                  <img
-                    src={item.frontImage}
-                    alt={item.productName}
-                    style={{
-                      width: "100px",
-                      height: "auto",
-                      marginRight: "10px",
-                    }}
-                  />
-                )}
-                <div>
-                  <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
-                    {item.productName}
-                  </div>
-                  <div style={{ fontSize: "1rem" }}>
-                    {item.realSkuNumber} | Required: {required} | Scanned:{" "}
-                    {scanned}
-                  </div>
-                </div>
-              </div>
-              {/* Progress Bar */}
-              <div
-                style={{
-                  marginTop: "8px",
-                  width: "100%",
-                  height: "10px",
-                  backgroundColor: "#dfe5f1",
-                  borderRadius: "5px",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${progressPercent}%`,
-                    height: "100%",
-                    backgroundColor: "#2d3a55",
-                  }}
-                ></div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+      {/* Lazy-loaded item list */}
+      <Suspense fallback={<Spinner minHeight="100px" />}>
+        <ItemList order={order} scanCounts={scanCounts} />
+      </Suspense>
 
-      {/* Fixed "Scan Products" Section at the Bottom */}
+      {/* Fixed "Scan Products" Section */}
       <div
         style={{
           position: "fixed",

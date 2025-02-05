@@ -1,11 +1,13 @@
 "use client";
 
-// app/page.js
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import OrderButton from "../components/OrderButton"; // Ensure this file exists
-import ScrollToTop from "../components/ScrollToTop"; // Import the new component
+import { useEffect, useState, useMemo } from "react";
 import { signOut } from "next-auth/react";
+import SearchBox from "../components/SearchBox";
+import FilterButtons from "../components/FilterButtons";
+import OrderListSection from "../components/OrderListSection";
+import ScrollToTop from "../components/ScrollToTop";
+import Spinner from "../components/Spinner";
+import { useOrders } from "../components/OrdersContext";
 
 // Helper function to format an ISO date string to Singapore time (dd/mm/yyyy hh:mm)
 function formatSingaporeTime(dateString) {
@@ -23,91 +25,68 @@ function formatSingaporeTime(dateString) {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Inline spinner component
-const Spinner = () => (
-  <div
-    style={{
-      backgroundColor: "#ffffff",
-      minHeight: "100vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <div
-      style={{
-        display: "inline-block",
-        width: "50px",
-        height: "50px",
-        border: "6px solid #dfe5f1",
-        borderTopColor: "#2d3a55",
-        borderRadius: "50%",
-        animation: "spin 1s linear infinite",
-      }}
-    ></div>
-    <style jsx>{`
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-    `}</style>
-  </div>
-);
-
 export default function Home() {
-  const [orders, setOrders] = useState([]);
+  const { orders, setOrders } = useOrders();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentFilter, setCurrentFilter] = useState("All");
 
-  const fetchOrders = () => {
-    setIsLoading(true);
-    fetch(API_URL)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.orders) {
-          setOrders(data.orders);
-        }
-        setIsLoading(false);
-      })
-      .catch((err) => {
+  // Async data fetching with AbortController for cancellation
+  const fetchOrders = async (signal) => {
+    try {
+      setIsLoading(true);
+      const res = await fetch(API_URL, { signal });
+      const data = await res.json();
+      if (data.orders) {
+        setOrders(data.orders);
+      }
+    } catch (err) {
+      if (err.name !== "AbortError") {
         console.error("Error fetching orders:", err);
-        setIsLoading(false);
-      });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    const controller = new AbortController();
+    fetchOrders(controller.signal);
+    return () => {
+      controller.abort();
+    };
+  }, [setOrders]);
 
-  const handleFetchAndSaveOrders = () => {
+  // Refresh orders function
+  const handleFetchAndSaveOrders = async () => {
     setIsLoading(true);
-    fetch(`${API_URL}?action=fetchAndSaveOrders`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          alert("Orders fetched and saved successfully!");
-          fetchOrders();
-        } else {
-          alert("Failed to fetch and save orders: " + data.error);
-          setIsLoading(false);
-        }
-      })
-      .catch((err) => {
-        console.error("Error triggering fetchAndSaveOrders:", err);
-        alert("Error triggering fetchAndSaveOrders: " + err.message);
-        setIsLoading(false);
-      });
+    try {
+      const res = await fetch(`${API_URL}?action=fetchAndSaveOrders`);
+      const data = await res.json();
+      if (data.success) {
+        alert("Orders fetched and saved successfully!");
+        fetchOrders();
+      } else {
+        alert("Failed to fetch and save orders: " + data.error);
+      }
+    } catch (err) {
+      console.error("Error triggering fetchAndSaveOrders:", err);
+      alert("Error triggering fetchAndSaveOrders: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const searchFilteredOrders = orders.filter((order) => {
+  // Memoise filtered orders
+  const searchFilteredOrders = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return true;
-    const orderNumber = String(order.orderNumber || "").toLowerCase();
-    const trackingNumber = String(order.trackingNumber || "").toLowerCase();
-    return orderNumber.includes(term) || trackingNumber.includes(term);
-  });
+    if (!term) return orders;
+    return orders.filter((order) => {
+      const orderNumber = String(order.orderNumber || "").toLowerCase();
+      const trackingNumber = String(order.trackingNumber || "").toLowerCase();
+      return orderNumber.includes(term) || trackingNumber.includes(term);
+    });
+  }, [orders, searchTerm]);
 
   const pendingOrders = searchFilteredOrders.filter(
     (order) => String(order.status || "").toLowerCase() === "pending"
@@ -116,8 +95,8 @@ export default function Home() {
     (order) => String(order.status || "").toLowerCase() === "done"
   );
 
-  // Calculate the overall pending orders per platform regardless of the current filter.
-  const allPendingByPlatform = pendingOrders.reduce((acc, order) => {
+  // Group pending orders by platform (used when filter is "All")
+  const pendingByPlatform = pendingOrders.reduce((acc, order) => {
     const platform = order.platform;
     if (!acc[platform]) acc[platform] = [];
     acc[platform].push(order);
@@ -142,58 +121,12 @@ export default function Home() {
     );
   }
 
-  const pendingByPlatform = displayPending.reduce((acc, order) => {
-    const platform = order.platform;
-    if (!acc[platform]) acc[platform] = [];
-    acc[platform].push(order);
-    return acc;
-  }, {});
-
-  // Define filter buttons.
-  // When selected, background: #2d3a55, text: #ffffff.
-  // When not selected, background: #dfe5f1, text: #000000.
-  const filters = ["All", "Shopee", "Lazada", "Shopify", "TikTok", "Done"];
-
-  if (isLoading) {
-    return <Spinner />;
-  }
-
   return (
     <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
-      {/* Fixed Search Bar */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          padding: "10px",
-          zIndex: 100,
-          borderBottom: "1px solid #eaeaea",
-          backgroundColor: "#ffffff",
-        }}
-      >
-        <input
-          type="search"
-          inputMode="none"
-          placeholder="Search by Order or Tracking Number"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: "100%",
-            maxWidth: "400px",
-            padding: "10px",
-            fontSize: "1rem",
-          }}
-        />
-      </div>
-
-      {/* Main Content Container with extra top margin */}
+      <SearchBox searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       <div style={{ marginTop: "100px", padding: "20px" }}>
-        {/* Render refresh and filter buttons only if searchTerm is empty */}
         {searchTerm === "" && (
           <>
-            {/* Refresh Button */}
             <div style={{ marginBottom: "20px" }}>
               <button
                 onClick={handleFetchAndSaveOrders}
@@ -210,210 +143,28 @@ export default function Home() {
                 Refresh Orders from External Source
               </button>
             </div>
-
-            {/* Filter Buttons */}
-            <div
-              style={{
-                marginBottom: "20px",
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "10px",
-              }}
-            >
-              {filters.map((filter) => {
-                let count = 0;
-                if (filter === "All") {
-                  count = orders.length;
-                } else if (filter === "Done") {
-                  count = doneOrders.length;
-                } else {
-                  // Use the overall pending count for the specific platform
-                  count = allPendingByPlatform[filter]
-                    ? allPendingByPlatform[filter].length
-                    : 0;
-                }
-                return (
-                  <button
-                    key={filter}
-                    onClick={() => setCurrentFilter(filter)}
-                    style={{
-                      padding: "8px 16px",
-                      fontSize: "1rem",
-                      backgroundColor:
-                        currentFilter === filter ? "#2d3a55" : "#dfe5f1",
-                      color: currentFilter === filter ? "#ffffff" : "#000000",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        backgroundColor: "#ffffff",
-                        color: "#2d3a55",
-                        border: "1px solid #2d3a55",
-                        padding: "2px 6px",
-                        borderRadius: "3px",
-                        marginRight: "5px",
-                        fontSize: "0.8rem",
-                        minWidth: "20px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {count}
-                    </span>
-                    {filter}
-                  </button>
-                );
-              })}
-            </div>
+            <FilterButtons
+              filters={["All", "Shopee", "Lazada", "Shopify", "TikTok", "Done"]}
+              currentFilter={currentFilter}
+              setCurrentFilter={setCurrentFilter}
+              orders={orders}
+              doneOrders={doneOrders}
+              pendingByPlatform={pendingByPlatform}
+            />
           </>
         )}
-
-        {/* Display Orders Based on Filter */}
-        {currentFilter === "All" && (
-          <>
-            {displayPending.length > 0 && (
-              <div>
-                <h1>Pending Orders</h1>
-                {["Shopee", "Lazada", "Shopify", "TikTok"].map((platform) => {
-                  if (
-                    pendingByPlatform[platform] &&
-                    pendingByPlatform[platform].length
-                  ) {
-                    return (
-                      <div key={platform}>
-                        <h2>{platform}</h2>
-                        <ul style={{ listStyle: "none", padding: 0 }}>
-                          {pendingByPlatform[platform].map((order) => (
-                            <li key={order.orderNumber}>
-                              <OrderButton
-                                order={order}
-                                formattedDate={formatSingaporeTime(
-                                  order.dateTimeConversion
-                                )}
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-                {Object.keys(pendingByPlatform)
-                  .filter(
-                    (platform) =>
-                      !["Shopee", "Lazada", "Shopify", "TikTok"].includes(
-                        platform
-                      )
-                  )
-                  .map((platform) => (
-                    <div key={platform}>
-                      <h2>{platform}</h2>
-                      <ul style={{ listStyle: "none", padding: 0 }}>
-                        {pendingByPlatform[platform].map((order) => (
-                          <li key={order.orderNumber}>
-                            <OrderButton
-                              order={order}
-                              formattedDate={formatSingaporeTime(
-                                order.dateTimeConversion
-                              )}
-                            />
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-              </div>
-            )}
-            {displayDone.length > 0 && (
-              <div>
-                <h1>Done Orders</h1>
-                <ul style={{ listStyle: "none", padding: 0 }}>
-                  {displayDone.map((order) => (
-                    <li key={order.orderNumber}>
-                      <OrderButton
-                        order={order}
-                        formattedDate={formatSingaporeTime(
-                          order.dateTimeConversion
-                        )}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </>
+        {isLoading ? (
+          <Spinner minHeight="200px" />
+        ) : (
+          <OrderListSection
+            displayPending={displayPending}
+            displayDone={displayDone}
+            pendingByPlatform={pendingByPlatform}
+            currentFilter={currentFilter}
+            formatSingaporeTime={formatSingaporeTime}
+            OrderButton={require("../components/OrderButton").default}
+          />
         )}
-
-        {currentFilter !== "All" && currentFilter !== "Done" && (
-          <>
-            {(displayPending.length > 0 || displayDone.length > 0) && (
-              <>
-                {displayPending.length > 0 && (
-                  <div>
-                    <h1>{currentFilter} Pending Orders</h1>
-                    <ul style={{ listStyle: "none", padding: 0 }}>
-                      {displayPending.map((order) => (
-                        <li key={order.orderNumber}>
-                          <OrderButton
-                            order={order}
-                            formattedDate={formatSingaporeTime(
-                              order.dateTimeConversion
-                            )}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {displayDone.length > 0 && (
-                  <div>
-                    <h1>{currentFilter} Done Orders</h1>
-                    <ul style={{ listStyle: "none", padding: 0 }}>
-                      {displayDone.map((order) => (
-                        <li key={order.orderNumber}>
-                          <OrderButton
-                            order={order}
-                            formattedDate={formatSingaporeTime(
-                              order.dateTimeConversion
-                            )}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </>
-            )}
-            {displayPending.length === 0 && displayDone.length === 0 && (
-              <p>No orders match the current filter.</p>
-            )}
-          </>
-        )}
-
-        {currentFilter === "Done" && displayDone.length > 0 && (
-          <div>
-            <h1>Done Orders</h1>
-            <ul style={{ listStyle: "none", padding: 0 }}>
-              {displayDone.map((order) => (
-                <li key={order.orderNumber}>
-                  <OrderButton
-                    order={order}
-                    formattedDate={formatSingaporeTime(
-                      order.dateTimeConversion
-                    )}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Log Out Button at the Bottom */}
         <div style={{ marginTop: "40px", textAlign: "center" }}>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

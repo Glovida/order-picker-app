@@ -1,23 +1,20 @@
-// components/LoadingOverlay.jsx
-export default function LoadingOverlay() {
+// components/Spinner.jsx
+"use client";
+
+export default function Spinner({ minHeight = "100vh" }) {
   return (
     <div
       style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(255, 255, 255, 0.7)", // semi-transparent white overlay
+        backgroundColor: "#ffffff",
+        minHeight,
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        zIndex: 9999, // make sure it sits on top of everything
       }}
     >
       <div
-        className="spinner"
         style={{
+          display: "inline-block",
           width: "50px",
           height: "50px",
           border: "6px solid #dfe5f1",
