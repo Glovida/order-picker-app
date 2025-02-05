@@ -1,4 +1,6 @@
-// pages/index.js
+"use client";
+
+// app/page.js
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import OrderButton from "../components/OrderButton"; // Ensure this file exists

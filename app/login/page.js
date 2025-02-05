@@ -1,9 +1,18 @@
-// pages/login.js
-import { getProviders, signIn } from "next-auth/react";
-import { useState } from "react";
+"use client";
 
-export default function Login({ providers }) {
+import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+
+export default function Login() {
+  const [providers, setProviders] = useState({});
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/auth/providers")
+      .then((res) => res.json())
+      .then((data) => setProviders(data))
+      .catch((err) => console.error("Error fetching providers:", err));
+  }, []);
 
   return (
     <div
@@ -31,7 +40,7 @@ export default function Login({ providers }) {
                     password,
                     callbackUrl: "/",
                   });
-                  if (result.error) {
+                  if (result?.error) {
                     setError(result.error);
                   }
                 }}
@@ -69,7 +78,6 @@ export default function Login({ providers }) {
             </div>
           );
         }
-        // If you add additional providers (like Google, GitHub, etc.)
         return (
           <div key={provider.name}>
             <button onClick={() => signIn(provider.id)}>
@@ -80,12 +88,4 @@ export default function Login({ providers }) {
       })}
     </div>
   );
-}
-
-// Fetch providers on the server-side.
-export async function getServerSideProps() {
-  const providers = await getProviders();
-  return {
-    props: { providers },
-  };
 }

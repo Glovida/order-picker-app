@@ -1,11 +1,12 @@
-// pages/order/[orderId].js
-import { useRouter } from "next/router";
+"use client";
+
+import { useParams } from "next/navigation"; // Use next/navigation for dynamic route params
 import { useEffect, useState } from "react";
-import OrderDetailClient from "../../components/OrderDetailClient";
+import OrderDetailClient from "../../../components/OrderDetailClient"; // Adjust the relative path as needed
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Define a simple inline Spinner component.
+// Inline Spinner component
 const Spinner = () => (
   <div
     style={{
@@ -38,8 +39,7 @@ const Spinner = () => (
 );
 
 export default function OrderDetail() {
-  const router = useRouter();
-  const { orderId } = router.query;
+  const { orderId } = useParams(); // Retrieve the orderId from the dynamic route
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
