@@ -16,6 +16,7 @@ export default function OrderDetailClient({ order, apiUrl }) {
   const router = useRouter();
   const [scanCounts, setScanCounts] = useState({});
   const [isComplete, setIsComplete] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Pre-compute a lookup for normalised barcodes.
   const barcodeLookup = useMemo(() => {
@@ -79,6 +80,7 @@ export default function OrderDetailClient({ order, apiUrl }) {
   }, [scanCounts, order]);
 
   const handleConfirm = async () => {
+    setIsSubmitting(true);
     try {
       const response = await fetch("/api/updateStatus", {
         method: "POST",
@@ -93,10 +95,12 @@ export default function OrderDetailClient({ order, apiUrl }) {
         router.push("/");
       } else {
         alert("Failed to update order: " + result.error);
+        setIsSubmitting(false);
       }
     } catch (error) {
       console.error("Error updating order:", error);
       alert("Error updating order: " + error.message);
+      setIsSubmitting(false);
     }
   };
 
@@ -154,22 +158,25 @@ export default function OrderDetailClient({ order, apiUrl }) {
           <div style={{ flex: 1 }}>
             <BarcodeInput onBarcodeScanned={handleBarcodeScanned} />
           </div>
-          {isComplete && (
-            <button
-              onClick={handleConfirm}
-              style={{
-                padding: "10px 20px",
-                fontSize: "1rem",
-                backgroundColor: "#dfe5f1",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                marginLeft: "10px",
-              }}
-            >
-              Confirm Order Picking
-            </button>
-          )}
+          {isComplete &&
+            (isSubmitting ? (
+              <Spinner minHeight="40px" />
+            ) : (
+              <button
+                onClick={handleConfirm}
+                style={{
+                  padding: "10px 20px",
+                  fontSize: "1rem",
+                  backgroundColor: "#dfe5f1",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  marginLeft: "10px",
+                }}
+              >
+                Confirm Order Picking
+              </button>
+            ))}
         </div>
       </div>
     </div>
