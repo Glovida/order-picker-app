@@ -168,7 +168,7 @@ export default function Home() {
         }}
       >
         <input
-          type="text"
+          type="search"
           inputMode="none"
           placeholder="Search by Order or Tracking Number"
           value={searchTerm}
