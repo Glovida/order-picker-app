@@ -169,6 +169,7 @@ export default function Home() {
       >
         <input
           type="text"
+          inputMode="none"
           placeholder="Search by Order or Tracking Number"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
