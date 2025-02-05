@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import OrderButton from "../components/OrderButton"; // Ensure this file exists
 import ScrollToTop from "../components/ScrollToTop"; // Import the new component
+import { signOut } from "next-auth/react";
 
 // Helper function to format an ISO date string to Singapore time (dd/mm/yyyy hh:mm)
 function formatSingaporeTime(dateString) {
@@ -19,6 +20,38 @@ function formatSingaporeTime(dateString) {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// Inline spinner component
+const Spinner = () => (
+  <div
+    style={{
+      backgroundColor: "#ffffff",
+      minHeight: "100vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <div
+      style={{
+        display: "inline-block",
+        width: "50px",
+        height: "50px",
+        border: "6px solid #dfe5f1",
+        borderTopColor: "#2d3a55",
+        borderRadius: "50%",
+        animation: "spin 1s linear infinite",
+      }}
+    ></div>
+    <style jsx>{`
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    `}</style>
+  </div>
+);
 
 export default function Home() {
   const [orders, setOrders] = useState([]);
@@ -114,39 +147,10 @@ export default function Home() {
     return acc;
   }, {});
 
+  // Define filter buttons.
+  // When selected, background: #2d3a55, text: #ffffff.
+  // When not selected, background: #dfe5f1, text: #000000.
   const filters = ["All", "Shopee", "Lazada", "Shopify", "TikTok", "Done"];
-
-  // Inline spinner component
-  const Spinner = () => (
-    <div
-      style={{
-        backgroundColor: "#ffffff",
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          display: "inline-block",
-          width: "50px",
-          height: "50px",
-          border: "6px solid #dfe5f1",
-          borderTopColor: "#2d3a55",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite",
-        }}
-      ></div>
-      <style jsx>{`
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
-    </div>
-  );
 
   if (isLoading) {
     return <Spinner />;
@@ -184,82 +188,87 @@ export default function Home() {
 
       {/* Main Content Container with extra top margin */}
       <div style={{ marginTop: "100px", padding: "20px" }}>
-        {/* Refresh Button */}
-        <div style={{ marginBottom: "20px" }}>
-          <button
-            onClick={handleFetchAndSaveOrders}
-            style={{
-              padding: "10px 20px",
-              fontSize: "1rem",
-              marginBottom: "20px",
-              backgroundColor: "#dfe5f1",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Refresh Orders from External Source
-          </button>
-        </div>
-
-        {/* Filter Buttons */}
-        <div
-          style={{
-            marginBottom: "20px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "10px",
-          }}
-        >
-          {filters.map((filter) => {
-            let count = 0;
-            if (filter === "All") {
-              count = orders.length;
-            } else if (filter === "Done") {
-              count = doneOrders.length;
-            } else {
-              // Use the overall pending count for the specific platform
-              count = allPendingByPlatform[filter]
-                ? allPendingByPlatform[filter].length
-                : 0;
-            }
-            return (
+        {/* Render refresh and filter buttons only if searchTerm is empty */}
+        {searchTerm === "" && (
+          <>
+            {/* Refresh Button */}
+            <div style={{ marginBottom: "20px" }}>
               <button
-                key={filter}
-                onClick={() => setCurrentFilter(filter)}
+                onClick={handleFetchAndSaveOrders}
                 style={{
-                  padding: "8px 16px",
+                  padding: "10px 20px",
                   fontSize: "1rem",
-                  backgroundColor:
-                    currentFilter === filter ? "#2d3a55" : "#dfe5f1",
-                  color: currentFilter === filter ? "#ffffff" : "#000000",
+                  marginBottom: "20px",
+                  backgroundColor: "#dfe5f1",
                   border: "none",
                   borderRadius: "4px",
                   cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
                 }}
               >
-                <span
-                  style={{
-                    backgroundColor: "#ffffff",
-                    color: "#2d3a55",
-                    border: "1px solid #2d3a55",
-                    padding: "2px 6px",
-                    borderRadius: "3px",
-                    marginRight: "5px",
-                    fontSize: "0.8rem",
-                    minWidth: "20px",
-                    textAlign: "center",
-                  }}
-                >
-                  {count}
-                </span>
-                {filter}
+                Refresh Orders from External Source
               </button>
-            );
-          })}
-        </div>
+            </div>
+
+            {/* Filter Buttons */}
+            <div
+              style={{
+                marginBottom: "20px",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "10px",
+              }}
+            >
+              {filters.map((filter) => {
+                let count = 0;
+                if (filter === "All") {
+                  count = orders.length;
+                } else if (filter === "Done") {
+                  count = doneOrders.length;
+                } else {
+                  // Use the overall pending count for the specific platform
+                  count = allPendingByPlatform[filter]
+                    ? allPendingByPlatform[filter].length
+                    : 0;
+                }
+                return (
+                  <button
+                    key={filter}
+                    onClick={() => setCurrentFilter(filter)}
+                    style={{
+                      padding: "8px 16px",
+                      fontSize: "1rem",
+                      backgroundColor:
+                        currentFilter === filter ? "#2d3a55" : "#dfe5f1",
+                      color: currentFilter === filter ? "#ffffff" : "#000000",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        backgroundColor: "#ffffff",
+                        color: "#2d3a55",
+                        border: "1px solid #2d3a55",
+                        padding: "2px 6px",
+                        borderRadius: "3px",
+                        marginRight: "5px",
+                        fontSize: "0.8rem",
+                        minWidth: "20px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {count}
+                    </span>
+                    {filter}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {/* Display Orders Based on Filter */}
         {currentFilter === "All" && (
