@@ -14,32 +14,36 @@ const ItemList = dynamic(() => import("./ItemList"), {
 
 export default function OrderDetailClient({ order, apiUrl }) {
   const router = useRouter();
+  // Use an object keyed by line item index to store scan counts.
   const [scanCounts, setScanCounts] = useState({});
   const [isComplete, setIsComplete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Pre-compute a lookup for normalised barcodes.
-  const barcodeLookup = useMemo(() => {
+  // Build a lookup mapping from normalized barcode to an array of line item indices.
+  const barcodeIndexLookup = useMemo(() => {
     const lookup = {};
-    order.items.forEach((item) => {
+    order.items.forEach((item, index) => {
       const normalizedBarcode = String(item.productBarcode || "")
         .trim()
         .toUpperCase();
-      lookup[normalizedBarcode] = item;
+      if (!lookup[normalizedBarcode]) {
+        lookup[normalizedBarcode] = [];
+      }
+      lookup[normalizedBarcode].push(index);
     });
     return lookup;
   }, [order]);
 
-  // Initialise scan counts for each item.
+  // Initialise scan counts for each order line item.
   useEffect(() => {
     const initialCounts = {};
-    Object.keys(barcodeLookup).forEach((barcode) => {
-      initialCounts[barcode] = 0;
+    order.items.forEach((_, index) => {
+      initialCounts[index] = 0;
     });
     setScanCounts(initialCounts);
-  }, [barcodeLookup]);
+  }, [order]);
 
-  // Increase the count for a matching product when a barcode is scanned.
+  // Increase the count for the correct line item when a barcode is scanned.
   const handleBarcodeScanned = (barcode) => {
     if (!order) return;
     const scannedCode = String(barcode || "")
@@ -47,33 +51,46 @@ export default function OrderDetailClient({ order, apiUrl }) {
       .toUpperCase();
     console.log("Handling scanned code:", scannedCode);
 
-    const item = barcodeLookup[scannedCode];
-
-    if (item) {
+    // Check if the scanned barcode exists in our lookup.
+    const indices = barcodeIndexLookup[scannedCode];
+    if (indices && indices.length > 0) {
+      let updated = false;
       setScanCounts((prev) => {
-        const currentCount = prev[scannedCode] || 0;
-        const required = Number(item.realQuantity);
-        if (currentCount >= required) {
-          window.alert("Scanned too many times. Please check quantity.");
-          return prev;
+        const newCounts = { ...prev };
+
+        // Iterate through each index for this barcode.
+        for (let i = 0; i < indices.length; i++) {
+          const index = indices[i];
+          const item = order.items[index];
+          const required = Number(item.realQuantity);
+          const currentCount = prev[index] || 0;
+
+          // If the current line item hasn't reached the required quantity, update it.
+          if (currentCount < required) {
+            newCounts[index] = currentCount + 1;
+            console.log(
+              `Incrementing count for item index ${index}: ${newCounts[index]}`
+            );
+            updated = true;
+            break;
+          }
         }
-        const newCount = currentCount + 1;
-        console.log(`Incrementing count for ${scannedCode}: ${newCount}`);
-        return { ...prev, [scannedCode]: newCount };
+        return newCounts;
       });
+
+      if (!updated) {
+        window.alert("Scanned too many times. Please check quantity.");
+      }
     } else {
       window.alert("Wrong item scanned. Please scan correct item.");
     }
   };
 
-  // Check if all items have been scanned the required number of times.
+  // Check if all line items have been scanned the required number of times.
   useEffect(() => {
-    const complete = order.items.every((item) => {
+    const complete = order.items.every((item, index) => {
       const required = Number(item.realQuantity);
-      const normalizedBarcode = String(item.productBarcode || "")
-        .trim()
-        .toUpperCase();
-      const scanned = scanCounts[normalizedBarcode] || 0;
+      const scanned = scanCounts[index] || 0;
       return scanned >= required;
     });
     setIsComplete(complete);

@@ -4,15 +4,12 @@
 export default function ItemList({ order, scanCounts }) {
   return (
     <ul style={{ listStyle: "none", padding: 0 }}>
-      {order.items.map((item) => {
-        const normalizedBarcode = String(item.productBarcode || "")
-          .trim()
-          .toUpperCase();
+      {order.items.map((item, index) => {
         const required = Number(item.realQuantity);
-        const scanned = scanCounts[normalizedBarcode] || 0;
+        const scanned = scanCounts[index] || 0;
         const progressPercent = Math.min((scanned / required) * 100, 100);
         return (
-          <li key={normalizedBarcode} style={{ marginBottom: "20px" }}>
+          <li key={item.lineItemKey} style={{ marginBottom: "20px" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
               {item.frontImage && (
                 <img
