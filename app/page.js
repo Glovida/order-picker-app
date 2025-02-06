@@ -30,6 +30,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentFilter, setCurrentFilter] = useState("All");
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   // Async data fetching with AbortController for cancellation
   const fetchOrders = async (signal) => {
@@ -167,17 +168,29 @@ export default function Home() {
         )}
         <div style={{ marginTop: "40px", textAlign: "center" }}>
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => {
+              setLogoutLoading(true);
+              signOut({ callbackUrl: "/login" });
+            }}
+            disabled={logoutLoading}
             style={{
               padding: "10px 20px",
               fontSize: "1rem",
               backgroundColor: "#dfe5f1",
               border: "none",
               borderRadius: "4px",
-              cursor: "pointer",
+              cursor: logoutLoading ? "not-allowed" : "pointer",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minWidth: "100px",
             }}
           >
-            Log Out
+            {logoutLoading ? (
+              <Spinner size={20} borderSize={3} minHeight="auto" />
+            ) : (
+              "Log Out"
+            )}
           </button>
         </div>
       </div>

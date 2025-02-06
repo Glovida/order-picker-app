@@ -1,7 +1,21 @@
 // components/Spinner.jsx
 "use client";
 
-export default function Spinner({ minHeight = "100vh" }) {
+export default function Spinner({
+  minHeight = "100vh",
+  size = 50,
+  borderSize = 6,
+}) {
+  const spinnerStyle = {
+    display: "inline-block",
+    width: `${size}px`,
+    height: `${size}px`,
+    border: `${borderSize}px solid #dfe5f1`,
+    borderTopColor: "#2d3a55",
+    borderRadius: "50%",
+    animation: "spin 1s linear infinite",
+  };
+
   return (
     <div
       style={{
@@ -12,17 +26,7 @@ export default function Spinner({ minHeight = "100vh" }) {
         alignItems: "center",
       }}
     >
-      <div
-        style={{
-          display: "inline-block",
-          width: "50px",
-          height: "50px",
-          border: "6px solid #dfe5f1",
-          borderTopColor: "#2d3a55",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite",
-        }}
-      ></div>
+      <div style={spinnerStyle}></div>
       <style jsx>{`
         @keyframes spin {
           to {
