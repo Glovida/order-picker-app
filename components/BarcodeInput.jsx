@@ -26,7 +26,9 @@ export default function BarcodeInput({ onBarcodeScanned }) {
     <input
       ref={inputRef}
       type="search"
+      id="barcodeInput"
       inputMode="none"
+      onfocus="this.removeAttribute('inputmode')"
       onKeyDown={handleKeyDown}
       placeholder="Scan barcode here..."
       style={{
