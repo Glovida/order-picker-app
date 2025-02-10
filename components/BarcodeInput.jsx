@@ -1,24 +1,13 @@
 // components/BarcodeInput.js
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export default function BarcodeInput({ onBarcodeScanned }) {
   const inputRef = useRef(null);
-  const [isOldAndroid, setIsOldAndroid] = useState(false);
 
   useEffect(() => {
-    // Automatically focus the input field
+    // Automatically focus the input field so it's always ready.
     if (inputRef.current) {
       inputRef.current.focus();
-    }
-
-    // Check if the user agent is Android and extract the version
-    const ua = window.navigator.userAgent;
-    const androidMatch = ua.match(/Android\s([0-9\.]+)/);
-    if (androidMatch) {
-      const version = parseFloat(androidMatch[1]);
-      if (version < 11) {
-        setIsOldAndroid(true);
-      }
     }
   }, []);
 
@@ -38,8 +27,6 @@ export default function BarcodeInput({ onBarcodeScanned }) {
       ref={inputRef}
       type="search"
       id="barcodeInput"
-      // Conditionally add the inputMode attribute if the OS is not old Android
-      {...(!isOldAndroid ? { inputMode: "none" } : {})}
       onKeyDown={handleKeyDown}
       placeholder="Scan barcode here..."
       style={{
