@@ -7,8 +7,8 @@ import { useProducts } from "../../../components/ProductsContext";
 
 // The endpoint for fetching products (fallback)
 const API_PRODUCTS_URL = process.env.NEXT_PUBLIC_PRODUCT_API_URL;
-// The endpoint for updating the barcode via Google Apps Script
-const UPDATE_BARCODE_API_URL = process.env.NEXT_PUBLIC_PRODUCT_API_URL;
+// The endpoint for updating the barcode via the Next.js API route
+const UPDATE_BARCODE_API_URL = "/api/updateBarcode";
 
 export default function ProductDetailPage() {
   const { sku } = useParams();
@@ -65,14 +65,13 @@ export default function ProductDetailPage() {
     }
   }, [sku, products]);
 
-  // Called when "Save" is clicked
+  // Called when "Save" is confirmed
   async function handleSave() {
     try {
       const response = await fetch(UPDATE_BARCODE_API_URL, {
-        redirect: "follow",
         method: "POST",
         headers: {
-          "Content-Type": "text/plain;charset=utf-8",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           sku: product.sku,
@@ -85,14 +84,15 @@ export default function ProductDetailPage() {
           ...product,
           barcode_number: barcodeInput,
         });
-        // Optionally, you might add a success message or update a global context
+        // Use Next.js quick refresh to update the page without a full reload
+        router.refresh();
       } else {
         console.error("Failed to update barcode");
       }
     } catch (error) {
       console.error("Error updating barcode:", error);
     }
-    // Switch off edit mode
+    // Switch off edit mode after saving
     setIsEditing(false);
   }
 
@@ -112,7 +112,7 @@ export default function ProductDetailPage() {
         minHeight: "100vh",
       }}
     >
-      {/* Header with Back and Edit/Save buttons */}
+      {/* Header with Back and Edit/Save/Close buttons */}
       <div
         style={{
           display: "flex",
@@ -134,20 +134,42 @@ export default function ProductDetailPage() {
           Back
         </button>
         {isEditing ? (
-          <button
-            onClick={handleSave}
-            style={{
-              padding: "8px 16px",
-              fontSize: "1rem",
-              border: "none",
-              borderRadius: "4px",
-              backgroundColor: "#4CAF50",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            Save
-          </button>
+          // If no changes were made, show "Close" with a red background; otherwise show "Save"
+          barcodeInput === (product.barcode_number || "") ? (
+            <button
+              onClick={() => setIsEditing(false)}
+              style={{
+                padding: "8px 16px",
+                fontSize: "1rem",
+                border: "none",
+                borderRadius: "4px",
+                backgroundColor: "red",
+                color: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                if (window.confirm("Confirm changes?")) {
+                  handleSave();
+                }
+              }}
+              style={{
+                padding: "8px 16px",
+                fontSize: "1rem",
+                border: "none",
+                borderRadius: "4px",
+                backgroundColor: "#4CAF50",
+                color: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              Save
+            </button>
+          )
         ) : (
           <button
             onClick={() => setIsEditing(true)}
@@ -182,9 +204,13 @@ export default function ProductDetailPage() {
         )}
         <h1 style={{ fontSize: "1.8rem" }}>{product.product_name}</h1>
         <p style={{ fontSize: "1rem", color: "#555" }}>SKU: {product.sku}</p>
+
         {isEditing ? (
           <div style={{ marginBottom: "20px" }}>
-            <label htmlFor="barcode" style={{ fontSize: "1rem", color: "#555" }}>
+            <label
+              htmlFor="barcode"
+              style={{ fontSize: "1rem", color: "#555" }}
+            >
               Barcode:
             </label>
             <input
@@ -205,6 +231,17 @@ export default function ProductDetailPage() {
           <p style={{ fontSize: "1rem", color: "#555" }}>
             Barcode: {product.barcode_number}
           </p>
+        )}
+
+        {/* Display the barcode image below the barcode number */}
+        {product.barcode_image && (
+          <div style={{ marginTop: "10px" }}>
+            <img
+              src={product.barcode_image}
+              alt="Barcode image"
+              style={{ maxWidth: "300px", height: "auto" }}
+            />
+          </div>
         )}
       </div>
     </div>
