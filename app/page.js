@@ -78,6 +78,42 @@ export default function Home() {
     }
   };
 
+  const handleUpdateMissingTrackingNumbers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}?action=updateMissingTrackingNumbers`);
+      const text = await res.text(); // Get the raw response text
+      console.log("Raw API response:", text); // Log raw response
+
+      let data;
+      try {
+        data = JSON.parse(text); // Parse as JSON
+      } catch (error) {
+        console.error("Failed to parse JSON:", error);
+        alert("Error: API did not return valid JSON. Check console.");
+        return;
+      }
+
+      console.log("Parsed API response:", data); // Log parsed response
+
+      if (data.success) {
+        alert(
+          `Tracking numbers refreshed successfully! Updated ${data.updatedOrders} orders.`
+        );
+        fetchOrders();
+      } else {
+        alert(
+          `Failed to refresh tracking numbers: ${data.error || "Unknown error"}`
+        );
+      }
+    } catch (err) {
+      console.error("Error triggering updateMissingTrackingNumbers:", err);
+      alert("Error triggering updateMissingTrackingNumbers: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Memoise filtered orders
   const searchFilteredOrders = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -135,13 +171,28 @@ export default function Home() {
                   padding: "10px 20px",
                   fontSize: "1rem",
                   marginBottom: "20px",
+                  marginRight: "10px",
                   backgroundColor: "#dfe5f1",
                   border: "none",
                   borderRadius: "4px",
                   cursor: "pointer",
                 }}
               >
-                Refresh Orders from External Source
+                Fetch Orders from OneCart
+              </button>
+              <button
+                onClick={handleUpdateMissingTrackingNumbers}
+                style={{
+                  padding: "10px 20px",
+                  fontSize: "1rem",
+                  marginBottom: "20px",
+                  backgroundColor: "#dfe5f1",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Refresh Tracking Numbers
               </button>
             </div>
             <FilterButtons
