@@ -14,7 +14,6 @@ const ItemList = dynamic(() => import("./ItemList"), {
 
 export default function OrderDetailClient({ order, apiUrl }) {
   const router = useRouter();
-  // Use an object keyed by line item index to store scan counts.
   const [scanCounts, setScanCounts] = useState({});
   const [isComplete, setIsComplete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,38 +33,37 @@ export default function OrderDetailClient({ order, apiUrl }) {
     return lookup;
   }, [order]);
 
-  // Initialise scan counts for each order line item.
+  // Initialize scan counts based on order status
   useEffect(() => {
     const initialCounts = {};
-    order.items.forEach((_, index) => {
-      initialCounts[index] = 0;
+    order.items.forEach((item, index) => {
+      initialCounts[index] =
+        order.status === "done" ? Number(item.realQuantity) : 0;
     });
     setScanCounts(initialCounts);
   }, [order]);
 
   // Increase the count for the correct line item when a barcode is scanned.
   const handleBarcodeScanned = (barcode) => {
-    if (!order) return;
+    if (!order || order.status === "done") return;
+
     const scannedCode = String(barcode || "")
       .trim()
       .toUpperCase();
     console.log("Handling scanned code:", scannedCode);
 
-    // Check if the scanned barcode exists in our lookup.
     const indices = barcodeIndexLookup[scannedCode];
     if (indices && indices.length > 0) {
       let updated = false;
       setScanCounts((prev) => {
         const newCounts = { ...prev };
 
-        // Iterate through each index for this barcode.
         for (let i = 0; i < indices.length; i++) {
           const index = indices[i];
           const item = order.items[index];
           const required = Number(item.realQuantity);
           const currentCount = prev[index] || 0;
 
-          // If the current line item hasn't reached the required quantity, update it.
           if (currentCount < required) {
             newCounts[index] = currentCount + 1;
             console.log(
@@ -173,9 +171,16 @@ export default function OrderDetailClient({ order, apiUrl }) {
           }}
         >
           <div style={{ flex: 1 }}>
-            <BarcodeInput onBarcodeScanned={handleBarcodeScanned} />
+            {order.status === "done" ? (
+              <p style={{ fontSize: "1rem", fontWeight: "bold" }}>
+                Order Picked
+              </p>
+            ) : (
+              <BarcodeInput onBarcodeScanned={handleBarcodeScanned} />
+            )}
           </div>
           {isComplete &&
+            order.status !== "done" &&
             (isSubmitting ? (
               <Spinner minHeight="40px" />
             ) : (
