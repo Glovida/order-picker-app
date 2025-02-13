@@ -13,7 +13,7 @@ const UPDATE_BARCODE_API_URL = "/api/updateBarcode";
 export default function ProductDetailPage() {
   const { sku } = useParams();
   const router = useRouter();
-  const { products } = useProducts();
+  const { products, setProducts, refreshProducts } = useProducts();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -78,13 +78,22 @@ export default function ProductDetailPage() {
           barcode: barcodeInput,
         }),
       });
+
       if (response.ok) {
-        // Update the local product state with the new barcode value
-        setProduct({
-          ...product,
-          barcode_number: barcodeInput,
-        });
-        // Use Next.js quick refresh to update the page without a full reload
+        const updatedProduct = { ...product, barcode_number: barcodeInput };
+
+        // Update local state
+        setProduct(updatedProduct);
+
+        // Update global state in ProductsContext
+        setProducts((prevProducts) =>
+          prevProducts.map((p) => (p.sku === product.sku ? updatedProduct : p))
+        );
+
+        // Ensure the latest data is fetched
+        refreshProducts();
+
+        // Refresh Next.js router to trigger UI updates
         router.refresh();
       } else {
         console.error("Failed to update barcode");
@@ -92,7 +101,7 @@ export default function ProductDetailPage() {
     } catch (error) {
       console.error("Error updating barcode:", error);
     }
-    // Switch off edit mode after saving
+
     setIsEditing(false);
   }
 
