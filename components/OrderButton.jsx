@@ -41,16 +41,16 @@ export default function OrderButton({ order, formattedDate }) {
   const isCompleted = order.status === "done";
 
   return (
-    <Link href={`/order/${order.orderNumber}`} legacyBehavior>
-      <a
-        style={{
-          display: "block",
-          textDecoration: "none",
-          color: "inherit",
-          marginBottom: "var(--space-3)",
-        }}
-      >
-        <div
+    <Link
+      href={`/order/${order.orderNumber}`}
+      style={{
+        display: "block",
+        textDecoration: "none",
+        color: "inherit",
+        marginBottom: "var(--space-3)",
+      }}
+    >
+      <div
           style={{
             display: "flex",
             alignItems: "center",
@@ -185,7 +185,6 @@ export default function OrderButton({ order, formattedDate }) {
             </svg>
           </div>
         </div>
-      </a>
     </Link>
   );
 }

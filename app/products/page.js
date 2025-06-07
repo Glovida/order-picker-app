@@ -103,10 +103,7 @@ function VirtualisedProductGrid({ products }) {
                       boxSizing: "border-box",
                     }}
                   >
-                    <Link
-                      href={`/products/${product.sku}`}
-                      style={productCardStyle}
-                    >
+                    <Link href={`/products/${product.sku}`} style={productCardStyle}>
                       {product.front_image && (
                         <div style={imageContainerStyle}>
                           <Image

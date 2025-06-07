@@ -99,7 +99,6 @@ export default function SearchBox({
           />
         </div>
       </div>
-
       {/* Slide-out Menu */}
       <div
         style={{
@@ -213,7 +212,6 @@ export default function SearchBox({
           </div>
         </div>
       </div>
-
       {/* Backdrop overlay */}
       {isMenuOpen && (
         <div

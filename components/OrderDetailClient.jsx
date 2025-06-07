@@ -174,7 +174,6 @@ export default function OrderDetailClient({ order }) {
           </button>
         </Link>
       </div>
-
       <h1>Order {order.orderNumber}</h1>
       {/* Platform and Tracking Number Info */}
       <div style={{ 
@@ -219,13 +218,11 @@ export default function OrderDetailClient({ order }) {
           </span>
         )}
       </div>
-
       <h2>Items to Pick:</h2>
       {/* Lazy-loaded item list */}
       <Suspense fallback={<Spinner minHeight="100px" />}>
         <ItemList order={order} scanCounts={scanCounts} />
       </Suspense>
-
       {/* Fixed "Scan Products" Section */}
       <div
         style={{

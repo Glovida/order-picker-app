@@ -144,41 +144,35 @@ export default function ProductDetailPage() {
         </button>
         {isEditing ? (
           // If no changes were made, show "Close" with a red background; otherwise show "Save"
-          barcodeInput === (product.barcode_number || "") ? (
-            <button
-              onClick={() => setIsEditing(false)}
-              style={{
-                padding: "8px 16px",
-                fontSize: "1rem",
-                border: "none",
-                borderRadius: "4px",
-                backgroundColor: "red",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              Close
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                if (window.confirm("Confirm changes?")) {
-                  handleSave();
-                }
-              }}
-              style={{
-                padding: "8px 16px",
-                fontSize: "1rem",
-                border: "none",
-                borderRadius: "4px",
-                backgroundColor: "#4CAF50",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              Save
-            </button>
-          )
+          (barcodeInput === (product.barcode_number || "") ? (<button
+            onClick={() => setIsEditing(false)}
+            style={{
+              padding: "8px 16px",
+              fontSize: "1rem",
+              border: "none",
+              borderRadius: "4px",
+              backgroundColor: "red",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >Close
+                        </button>) : (<button
+            onClick={() => {
+              if (window.confirm("Confirm changes?")) {
+                handleSave();
+              }
+            }}
+            style={{
+              padding: "8px 16px",
+              fontSize: "1rem",
+              border: "none",
+              borderRadius: "4px",
+              backgroundColor: "#4CAF50",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >Save
+                        </button>))
         ) : (
           <button
             onClick={() => setIsEditing(true)}
@@ -196,7 +190,6 @@ export default function ProductDetailPage() {
           </button>
         )}
       </div>
-
       {/* Product Details */}
       <div style={{ textAlign: "center" }}>
         {product.front_image && (
