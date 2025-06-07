@@ -12,11 +12,41 @@ const ItemList = dynamic(() => import("./ItemList"), {
   loading: () => <Spinner minHeight="100px" />,
 });
 
-export default function OrderDetailClient({ order, apiUrl }) {
+export default function OrderDetailClient({ order }) {
   const router = useRouter();
   const [scanCounts, setScanCounts] = useState({});
   const [isComplete, setIsComplete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Platform color mapping (same as OrderButton)
+  const platformStyles = {
+    Shopee: {
+      backgroundColor: "#fff5f2",
+      borderColor: "#ff6b35",
+      platformColor: "#ff6b35"
+    },
+    Lazada: {
+      backgroundColor: "#f8f6ff", 
+      borderColor: "#6366f1",
+      platformColor: "#6366f1"
+    },
+    Shopify: {
+      backgroundColor: "#f0fdf4",
+      borderColor: "#22c55e", 
+      platformColor: "#22c55e"
+    },
+    TikTok: {
+      backgroundColor: "#f0fdfa",
+      borderColor: "#14b8a6",
+      platformColor: "#14b8a6"
+    },
+  };
+
+  const platformStyle = platformStyles[order.platform] || {
+    backgroundColor: "#f8fafc",
+    borderColor: "#e2e8f0",
+    platformColor: "#64748b"
+  };
 
   // Build a lookup mapping from normalized barcode to an array of line item indices.
   const barcodeIndexLookup = useMemo(() => {
@@ -132,7 +162,14 @@ export default function OrderDetailClient({ order, apiUrl }) {
       {/* Back Button */}
       <div style={{ marginBottom: "20px" }}>
         <Link href="/">
-          <button style={{ padding: "8px 16px", fontSize: "1rem" }}>
+          <button style={{
+            padding: "8px 16px",
+            fontSize: "1rem",
+            border: "none",
+            borderRadius: "4px",
+            backgroundColor: "#dfe5f1",
+            cursor: "pointer",
+          }}>
             Back
           </button>
         </Link>
@@ -140,9 +177,48 @@ export default function OrderDetailClient({ order, apiUrl }) {
 
       <h1>Order {order.orderNumber}</h1>
       {/* Platform and Tracking Number Info */}
-      <p style={{ fontSize: "1rem", marginBottom: "20px" }}>
-        {order.platform} | Tracking No.: {order.trackingNumber}
-      </p>
+      <div style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        gap: "16px", 
+        marginBottom: "20px",
+        flexWrap: "wrap"
+      }}>
+        <span style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          fontSize: "0.875rem",
+          fontWeight: "600",
+          color: platformStyle.platformColor,
+          backgroundColor: platformStyle.backgroundColor,
+          padding: "6px 12px",
+          borderRadius: "6px",
+          border: `1px solid ${platformStyle.borderColor}`,
+        }}>
+          <div style={{
+            width: "8px",
+            height: "8px",
+            borderRadius: "50%",
+            backgroundColor: platformStyle.platformColor
+          }}></div>
+          {order.platform}
+        </span>
+        
+        {order.trackingNumber && (
+          <span style={{
+            fontSize: "0.875rem",
+            color: "#64748b",
+            fontFamily: "Monaco, Inconsolata, 'Roboto Mono', monospace",
+            backgroundColor: "#f8fafc",
+            padding: "6px 12px",
+            borderRadius: "6px",
+            border: "1px solid #e2e8f0",
+          }}>
+            Tracking: {order.trackingNumber}
+          </span>
+        )}
+      </div>
 
       <h2>Items to Pick:</h2>
       {/* Lazy-loaded item list */}

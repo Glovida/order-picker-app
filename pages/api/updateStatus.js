@@ -1,6 +1,9 @@
 // pages/api/updateStatus.js
 import { google } from "googleapis";
 
+// Enable caching for production
+export const dynamic = 'force-static';
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });

@@ -15,7 +15,7 @@ export default NextAuth({
         },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         // Verify the credentials using environment variables.
         // For an internal app, these values can be set in .env.local.
         const username = process.env.CREDENTIAL_USERNAME;

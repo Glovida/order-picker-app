@@ -1,7 +1,8 @@
 // app/layout.js
 import { Providers } from "./providers";
-import "/styles/globals.css";
-import "/styles/Home.module.css";
+import { WebVitals } from "../components/WebVitals";
+import "../styles/globals.css";
+import "../styles/Home.module.css";
 
 export const metadata = {
   title: "Glovida Internal App",
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
       <head>
       </head>
       <body style={{ backgroundColor: "#ffffff" }}>
+        <WebVitals />
         <Providers>{children}</Providers>
       </body>
     </html>

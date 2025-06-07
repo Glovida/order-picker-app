@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -16,5 +16,8 @@
     "react-dom": "^19.0.0",
     "react-virtualized-auto-sizer": "^1.0.25",
     "react-window": "^1.8.11"
+  },
+  "devDependencies": {
+    "eslint-config-next": "^15.3.3"
   }
 }

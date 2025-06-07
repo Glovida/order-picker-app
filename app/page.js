@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { signOut } from "next-auth/react";
+import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
 import SearchBox from "../components/SearchBox";
 import FilterButtons from "../components/FilterButtons";
 import OrderListSection from "../components/OrderListSection";
 import ScrollToTop from "../components/ScrollToTop";
 import Spinner from "../components/Spinner";
+import OrderButton from "../components/OrderButton";
 import { useOrders } from "../components/OrdersContext";
 
 // Helper function to format an ISO date string to Singapore time (dd/mm/yyyy hh:mm)
@@ -30,10 +30,9 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentFilter, setCurrentFilter] = useState("All");
-  const [logoutLoading, setLogoutLoading] = useState(false);
 
   // Async data fetching with AbortController for cancellation
-  const fetchOrders = async (signal) => {
+  const fetchOrders = useCallback(async (signal) => {
     try {
       setIsLoading(true);
       const res = await fetch(API_URL, { signal });
@@ -48,7 +47,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setOrders]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -56,7 +55,7 @@ export default function Home() {
     return () => {
       controller.abort();
     };
-  }, [setOrders]);
+  }, [setOrders, fetchOrders]);
 
   // Refresh orders function
   const handleFetchAndSaveOrders = async () => {
@@ -159,42 +158,46 @@ export default function Home() {
   }
 
   return (
-    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
+    <div style={{ minHeight: "100vh" }}>
       <SearchBox searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-      <div style={{ marginTop: "100px", padding: "20px" }}>
+      
+      <div className="container" style={{ marginTop: "100px" }}>
         {searchTerm === "" && (
-          <>
-            <div style={{ marginBottom: "20px" }}>
-              <button
-                onClick={handleFetchAndSaveOrders}
-                style={{
-                  padding: "10px 20px",
-                  fontSize: "1rem",
-                  marginBottom: "20px",
-                  marginRight: "10px",
-                  backgroundColor: "#dfe5f1",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
-                Fetch Orders from OneCart
-              </button>
-              <button
-                onClick={handleUpdateMissingTrackingNumbers}
-                style={{
-                  padding: "10px 20px",
-                  fontSize: "1rem",
-                  marginBottom: "20px",
-                  backgroundColor: "#dfe5f1",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
-                Refresh Tracking Numbers
-              </button>
+          <div className="card mb-4">
+            <div className="card-body">
+              <div className="flex gap-4 flex-wrap">
+                <button
+                  onClick={handleFetchAndSaveOrders}
+                  className="btn btn-primary"
+                  disabled={isLoading}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                    <path d="M3 21v-5h5"/>
+                  </svg>
+                  Fetch Orders from OneCart
+                </button>
+                <button
+                  onClick={handleUpdateMissingTrackingNumbers}
+                  className="btn btn-secondary"
+                  disabled={isLoading}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                    <path d="M9 14l2 2 4-4"/>
+                  </svg>
+                  Refresh Tracking Numbers
+                </button>
+              </div>
             </div>
+          </div>
+        )}
+
+        {searchTerm === "" && (
+          <div className="mb-4">
             <FilterButtons
               filters={["All", "Shopee", "Lazada", "Shopify", "TikTok", "Done"]}
               currentFilter={currentFilter}
@@ -203,48 +206,40 @@ export default function Home() {
               doneOrders={doneOrders}
               pendingByPlatform={pendingByPlatform}
             />
-          </>
+          </div>
         )}
-        {isLoading ? (
-          <Spinner minHeight="200px" />
-        ) : (
-          <OrderListSection
-            displayPending={displayPending}
-            displayDone={displayDone}
-            pendingByPlatform={pendingByPlatform}
-            currentFilter={currentFilter}
-            formatSingaporeTime={formatSingaporeTime}
-            OrderButton={require("../components/OrderButton").default}
-          />
-        )}
-        <div style={{ marginTop: "40px", textAlign: "center" }}>
-          <button
-            onClick={() => {
-              setLogoutLoading(true);
-              signOut({ callbackUrl: "/login" });
-            }}
-            disabled={logoutLoading}
-            style={{
-              padding: "10px 20px",
-              fontSize: "1rem",
-              backgroundColor: "#dfe5f1",
-              border: "none",
-              borderRadius: "4px",
-              cursor: logoutLoading ? "not-allowed" : "pointer",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minWidth: "100px",
-            }}
-          >
-            {logoutLoading ? (
-              <Spinner size={20} borderSize={3} minHeight="auto" />
-            ) : (
-              "Log Out"
-            )}
-          </button>
+
+        {/* Main Content */}
+        <div className="mb-4">
+          {isLoading ? (
+            <div className="card">
+              <div className="card-body text-center py-8">
+                <Spinner minHeight="200px" />
+                <p className="mt-4">Loading orders...</p>
+              </div>
+            </div>
+          ) : (
+            <Suspense fallback={
+              <div className="card">
+                <div className="card-body text-center py-8">
+                  <Spinner minHeight="200px" />
+                  <p className="mt-4">Loading orders...</p>
+                </div>
+              </div>
+            }>
+              <OrderListSection
+                displayPending={displayPending}
+                displayDone={displayDone}
+                pendingByPlatform={pendingByPlatform}
+                currentFilter={currentFilter}
+                formatSingaporeTime={formatSingaporeTime}
+                OrderButton={OrderButton}
+              />
+            </Suspense>
+          )}
         </div>
       </div>
+      
       <ScrollToTop />
     </div>
   );

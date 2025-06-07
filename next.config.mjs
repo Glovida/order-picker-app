@@ -4,6 +4,7 @@ const nextConfig = {
   images: {
     domains: ["cdn.shopify.com"],
   },
+  bundlePagesRouterDependencies: true,
 };
 
 export default nextConfig;

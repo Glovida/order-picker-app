@@ -2,6 +2,9 @@
 
 import { google } from "googleapis";
 
+// Enable caching for production
+export const dynamic = 'force-static';
+
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID_TWO; // Use your second spreadsheet ID
 const SHEET_NAME = "Sheet1"; // Change if your target sheet has a different name
 

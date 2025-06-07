@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -11,49 +11,42 @@ import { useProducts } from "../../components/ProductsContext";
 
 // Static style objects
 const containerStyle = {
-  backgroundColor: "#ffffff",
   minHeight: "100vh",
-  padding: "20px",
+  padding: "var(--space-4)",
 };
 
-const spinnerContainerStyle = {
-  minHeight: "200px",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-};
 
-// Remove the margin from the product card style so that it fills its grid cell.
+// Modern product card style using design system
 const productCardStyle = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "space-between",
-  border: "1px solid #eaeaea",
-  borderRadius: "8px",
-  padding: "10px",
+  border: "1px solid var(--border-color)",
+  borderRadius: "var(--radius-lg)",
+  padding: "var(--space-4)",
   textAlign: "center",
   textDecoration: "none",
-  color: "#000",
-  backgroundColor: "#f9f9f9",
+  color: "var(--foreground)",
+  backgroundColor: "var(--card-bg)",
   width: "100%",
   height: "100%",
   boxSizing: "border-box",
-};
-
-const productImageStyle = {
-  borderRadius: "4px",
-  marginBottom: "10px",
+  boxShadow: "var(--shadow-sm)",
+  transition: "all 0.2s ease",
 };
 
 const productTitleStyle = {
-  fontSize: "1.1rem",
-  fontWeight: "bold",
+  fontSize: "0.875rem",
+  fontWeight: "600",
+  color: "var(--gray-900)",
+  lineHeight: "1.2",
 };
 
 const productSkuStyle = {
-  fontSize: "0.9rem",
-  color: "#555",
+  fontSize: "0.75rem",
+  color: "var(--gray-500)",
+  fontFamily: "var(--font-mono)",
 };
 
 // Virtualised grid component for the product cards
@@ -166,16 +159,42 @@ function ProductsPageContent() {
         placeholder="Search products by SKU, Name, or Barcode"
       />
 
-      {/* The container below must have an explicit height so that AutoSizer can compute dimensions.
-          Adjust the height as needed depending on your layout. */}
-      <div style={{ marginTop: "80px", height: "calc(100vh - 100px)" }}>
-        {isLoading ? (
-          <div style={spinnerContainerStyle}>
-            <Spinner minHeight="200px" />
-          </div>
-        ) : (
-          <VirtualisedProductGrid products={filteredProducts} />
-        )}
+      <div className="container" style={{ marginTop: "80px" }}>
+        {/* Products Grid Container */}
+        <div style={{ height: "calc(100vh - 100px)", minHeight: "400px" }}>
+          {isLoading ? (
+            <div className="card">
+              <div className="card-body text-center py-8">
+                <Spinner minHeight="200px" />
+                <p className="mt-4">Loading products...</p>
+              </div>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="card">
+              <div className="card-body text-center py-8">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" strokeWidth="1.5" style={{ margin: "0 auto var(--space-4)" }}>
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.35-4.35"/>
+                </svg>
+                <h3 style={{ color: "var(--gray-600)" }}>No products found</h3>
+                <p style={{ color: "var(--gray-500)" }}>
+                  {searchTerm ? `No products match "${searchTerm}"` : 'No products available'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Suspense fallback={
+              <div className="card">
+                <div className="card-body text-center py-8">
+                  <Spinner minHeight="200px" />
+                  <p className="mt-4">Loading products...</p>
+                </div>
+              </div>
+            }>
+              <VirtualisedProductGrid products={filteredProducts} />
+            </Suspense>
+          )}
+        </div>
       </div>
     </div>
   );
