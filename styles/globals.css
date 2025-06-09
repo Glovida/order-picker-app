@@ -381,12 +381,14 @@ label {
     font-size: 0.875rem;
   }
   
-  .flex {
-    flex-direction: column;
+  /* Keep button containers horizontal on mobile */
+  .flex-wrap {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
   
   .flex.gap-4 {
-    gap: var(--space-3);
+    gap: var(--space-2);
   }
 }
 
