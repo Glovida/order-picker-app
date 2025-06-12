@@ -1,6 +1,7 @@
 // app/layout.js
 import { Providers } from "./providers";
 import { WebVitals } from "../components/WebVitals";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "../styles/globals.css";
 import "../styles/Home.module.css";
 
@@ -24,11 +25,13 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head>
-      </head>
+      <head></head>
       <body style={{ backgroundColor: "#ffffff" }}>
         <WebVitals />
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <SpeedInsights />
+        </Providers>
       </body>
     </html>
   );
