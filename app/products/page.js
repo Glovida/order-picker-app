@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useMemo, Suspense, useCallback } from "react";
+import { useState, useMemo, Suspense, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import AutoSizer from "react-virtualized-auto-sizer";
-import { FixedSizeGrid as Grid } from "react-window";
 import Spinner from "../../components/Spinner";
 import SearchBox from "../../components/SearchBox";
 import { useProducts } from "../../components/ProductsContext";
@@ -80,12 +78,12 @@ function ImagePlaceholder() {
 }
 
 // Optimized product card component
-const ProductCard = ({ product, style, isMobile }) => {
+const ProductCard = ({ product, isMobile }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   // Responsive image container dimensions
-  const imageSize = isMobile ? "87px" : "175px";
+  const imageSize = isMobile ? "120px" : "175px";
   const imageContainerStyle = {
     position: "relative",
     width: imageSize,
@@ -105,16 +103,13 @@ const ProductCard = ({ product, style, isMobile }) => {
   }, []);
 
   return (
-    <div style={style}>
-      <div
-        style={{
-          padding: "10px",
-          width: "100%",
-          height: "100%",
-          boxSizing: "border-box",
-        }}
-      >
-        <Link href={`/products/${product.sku}`} style={productCardStyle}>
+    <div style={{
+      padding: "10px",
+      width: "100%",
+      height: "100%",
+      boxSizing: "border-box",
+    }}>
+      <Link href={`/products/${product.sku}`} style={productCardStyle}>
           <div style={imageContainerStyle}>
             {product.front_image && !imageError ? (
               <>
@@ -123,7 +118,7 @@ const ProductCard = ({ product, style, isMobile }) => {
                   src={product.front_image}
                   alt={product.product_name}
                   fill
-                  sizes={isMobile ? "87px" : "175px"}
+                  sizes={isMobile ? "120px" : "175px"}
                   priority={false}
                   loading="lazy"
                   quality={75}
@@ -161,58 +156,39 @@ const ProductCard = ({ product, style, isMobile }) => {
             whiteSpace: "nowrap"
           }}>SKU: {product.sku}</div>
         </Link>
-      </div>
     </div>
   );
 };
 
-// Virtualised grid component for the product cards
-function VirtualisedProductGrid({ products }) {
-  const Cell = useCallback(({ columnIndex, rowIndex, style, data }) => {
-    const { numColumns, isMobile } = data;
-    const index = rowIndex * numColumns + columnIndex;
-    if (index >= products.length) {
-      return null;
-    }
-    const product = products[index];
-    return <ProductCard key={product.sku} product={product} style={style} isMobile={isMobile} />;
-  }, [products]);
+// Regular grid component for the product cards
+function ProductGrid({ products }) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const gridStyle = {
+    display: 'grid',
+    gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(220px, 1fr))',
+    gap: '10px',
+    padding: '20px 0',
+  };
 
   return (
-    <AutoSizer>
-      {({ height, width }) => {
-        // Detect mobile screen (width < 768px)
-        const isMobile = width < 768;
-        
-        // Responsive card dimensions
-        const cardWidth = isMobile ? 110 : 220;
-        const cardHeight = isMobile ? 190 : 320;
-        
-        const numColumns = Math.max(Math.floor(width / cardWidth), 1);
-        const numRows = products.length === 0 ? 0 : Math.ceil(products.length / numColumns);
-
-        if (products.length === 0) {
-          return null;
-        }
-
-        return (
-          <Grid
-            key={`grid-${products.length}-${numColumns}`}
-            columnCount={numColumns}
-            columnWidth={cardWidth}
-            height={height}
-            rowCount={numRows}
-            rowHeight={cardHeight}
-            width={width}
-            overscanRowCount={1}
-            overscanColumnCount={0}
-            itemData={{ numColumns, isMobile }}
-          >
-            {Cell}
-          </Grid>
-        );
-      }}
-    </AutoSizer>
+    <div style={gridStyle}>
+      {products.map((product) => (
+        <ProductCard key={product.sku} product={product} isMobile={isMobile} />
+      ))}
+    </div>
   );
 }
 
@@ -256,7 +232,7 @@ function ProductsPageContent() {
 
       <div className="container" style={{ marginTop: "80px" }}>
         {/* Products Grid Container */}
-        <div style={{ height: "calc(100vh - 100px)", minHeight: "400px" }}>
+        <div>
           {isLoading ? (
             <div className="card">
               <div className="card-body text-center py-8">
@@ -286,7 +262,7 @@ function ProductsPageContent() {
                 </div>
               </div>
             }>
-              <VirtualisedProductGrid products={filteredProducts} />
+              <ProductGrid products={filteredProducts} />
             </Suspense>
           )}
         </div>
