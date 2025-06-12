@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
-import Image from "next/image";
 import Spinner from "../../../components/Spinner";
 import { useProducts } from "../../../components/ProductsContext";
 
@@ -245,13 +244,9 @@ export default function ProductDetailPage() {
         {product.front_image && !imageError ? (
           <div style={{ position: "relative", display: "inline-block" }}>
             {!imageLoaded && <ImagePlaceholder width="300px" height="300px" />}
-            <Image
+            <img
               src={product.front_image}
               alt={product.product_name}
-              width={300}
-              height={300}
-              priority={true}
-              quality={85}
               style={{
                 width: "300px",
                 height: "auto",
