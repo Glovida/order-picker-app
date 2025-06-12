@@ -199,7 +199,7 @@ export default function Home() {
         {searchTerm === "" && (
           <div className="mb-4">
             <FilterButtons
-              filters={["All", "Shopee", "Lazada", "Shopify", "TikTok", "Done"]}
+              filters={["All", "Shopee", "Lazada", "Shopify", "TikTok", "Amazon", "Done"]}
               currentFilter={currentFilter}
               setCurrentFilter={setCurrentFilter}
               orders={orders}

@@ -16,7 +16,7 @@ const OrderListComponent = ({
         {displayPending.length > 0 && (
           <div>
             <h1>Pending Orders</h1>
-            {["Shopee", "Lazada", "Shopify", "TikTok"].map((platform) => {
+            {["Shopee", "Lazada", "Shopify", "TikTok", "Amazon"].map((platform) => {
               if (
                 pendingByPlatform[platform] &&
                 pendingByPlatform[platform].length
@@ -44,7 +44,7 @@ const OrderListComponent = ({
             {Object.keys(pendingByPlatform)
               .filter(
                 (platform) =>
-                  !["Shopee", "Lazada", "Shopify", "TikTok"].includes(platform)
+                  !["Shopee", "Lazada", "Shopify", "TikTok", "Amazon"].includes(platform)
               )
               .map((platform) => (
                 <div key={platform}>

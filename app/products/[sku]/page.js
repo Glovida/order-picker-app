@@ -1,7 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import Spinner from "../../../components/Spinner";
 import { useProducts } from "../../../components/ProductsContext";
 
@@ -9,6 +10,37 @@ import { useProducts } from "../../../components/ProductsContext";
 const API_PRODUCTS_URL = process.env.NEXT_PUBLIC_PRODUCT_API_URL;
 // The endpoint for updating the barcode via the Next.js API route
 const UPDATE_BARCODE_API_URL = "/api/updateBarcode";
+
+// Image placeholder component for better loading UX
+function ImagePlaceholder({ width = "300px", height = "300px" }) {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        backgroundColor: "var(--gray-100)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "8px",
+        marginBottom: "20px",
+      }}
+    >
+      <svg
+        width="64"
+        height="64"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--gray-400)"
+        strokeWidth="1"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21,15 16,10 5,21"/>
+      </svg>
+    </div>
+  );
+}
 
 export default function ProductDetailPage() {
   const { sku } = useParams();
@@ -20,6 +52,20 @@ export default function ProductDetailPage() {
   // New state to control editing and hold the input value
   const [isEditing, setIsEditing] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
+  
+  // Image loading states
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Image loading handlers
+  const handleImageLoad = useCallback(() => {
+    setImageLoaded(true);
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+    setImageLoaded(true);
+  }, []);
 
   useEffect(() => {
     async function fetchProductFallback() {
@@ -44,6 +90,10 @@ export default function ProductDetailPage() {
         setIsLoading(false);
       }
     }
+
+    // Reset image states when product changes
+    setImageLoaded(false);
+    setImageError(false);
 
     // First, try to get the product from the global context.
     if (sku && products.length > 0) {
@@ -192,18 +242,34 @@ export default function ProductDetailPage() {
       </div>
       {/* Product Details */}
       <div style={{ textAlign: "center" }}>
-        {product.front_image && (
-          <img
-            src={product.front_image}
-            alt={product.product_name}
-            style={{
-              width: "300px",
-              height: "auto",
-              borderRadius: "8px",
-              marginBottom: "20px",
-            }}
-          />
-        )}
+        {product.front_image && !imageError ? (
+          <div style={{ position: "relative", display: "inline-block" }}>
+            {!imageLoaded && <ImagePlaceholder width="300px" height="300px" />}
+            <Image
+              src={product.front_image}
+              alt={product.product_name}
+              width={300}
+              height={300}
+              priority={true}
+              quality={85}
+              style={{
+                width: "300px",
+                height: "auto",
+                borderRadius: "8px",
+                marginBottom: "20px",
+                opacity: imageLoaded ? 1 : 0,
+                transition: "opacity 0.3s ease-in-out",
+                position: imageLoaded ? "static" : "absolute",
+                top: 0,
+                left: 0
+              }}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          </div>
+        ) : product.front_image ? (
+          <ImagePlaceholder width="300px" height="300px" />
+        ) : null}
         <h1 style={{ fontSize: "1.8rem" }}>{product.product_name}</h1>
         <p style={{ fontSize: "1rem", color: "#555" }}>SKU: {product.sku}</p>
 

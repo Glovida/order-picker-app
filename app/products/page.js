@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, Suspense, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -49,16 +49,145 @@ const productSkuStyle = {
   fontFamily: "var(--font-mono)",
 };
 
+// Image placeholder component for better loading UX
+function ImagePlaceholder() {
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        backgroundColor: "var(--gray-100)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "4px",
+      }}
+    >
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--gray-400)"
+        strokeWidth="1"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21,15 16,10 5,21"/>
+      </svg>
+    </div>
+  );
+}
+
+// Optimized product card component
+const ProductCard = ({ product, style, isMobile }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Responsive image container dimensions
+  const imageSize = isMobile ? "87px" : "175px";
+  const imageContainerStyle = {
+    position: "relative",
+    width: imageSize,
+    height: imageSize,
+    borderRadius: "4px",
+    marginBottom: isMobile ? "5px" : "10px",
+    overflow: "hidden",
+  };
+
+  const handleImageLoad = useCallback(() => {
+    setImageLoaded(true);
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+    setImageLoaded(true);
+  }, []);
+
+  return (
+    <div style={style}>
+      <div
+        style={{
+          padding: "10px",
+          width: "100%",
+          height: "100%",
+          boxSizing: "border-box",
+        }}
+      >
+        <Link href={`/products/${product.sku}`} style={productCardStyle}>
+          <div style={imageContainerStyle}>
+            {product.front_image && !imageError ? (
+              <>
+                {!imageLoaded && <ImagePlaceholder />}
+                <Image
+                  src={product.front_image}
+                  alt={product.product_name}
+                  fill
+                  sizes={isMobile ? "87px" : "175px"}
+                  priority={false}
+                  loading="lazy"
+                  quality={75}
+                  style={{ 
+                    objectFit: "cover",
+                    opacity: imageLoaded ? 1 : 0,
+                    transition: "opacity 0.2s ease-in-out"
+                  }}
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                />
+              </>
+            ) : (
+              <ImagePlaceholder />
+            )}
+          </div>
+          <div style={{
+            ...productTitleStyle,
+            fontSize: isMobile ? "0.75rem" : "0.875rem",
+            lineHeight: isMobile ? "1.1" : "1.2",
+            maxHeight: isMobile ? "2.2rem" : "auto",
+            overflow: "hidden",
+            display: "-webkit-box",
+            WebkitLineClamp: isMobile ? 2 : 3,
+            WebkitBoxOrient: "vertical",
+            textOverflow: "ellipsis"
+          }}>
+            {product.product_name}
+          </div>
+          <div style={{
+            ...productSkuStyle,
+            fontSize: isMobile ? "0.65rem" : "0.75rem",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+          }}>SKU: {product.sku}</div>
+        </Link>
+      </div>
+    </div>
+  );
+};
+
 // Virtualised grid component for the product cards
 function VirtualisedProductGrid({ products }) {
+  const Cell = useCallback(({ columnIndex, rowIndex, style, data }) => {
+    const { numColumns, isMobile } = data;
+    const index = rowIndex * numColumns + columnIndex;
+    if (index >= products.length) {
+      return null;
+    }
+    const product = products[index];
+    return <ProductCard key={product.sku} product={product} style={style} isMobile={isMobile} />;
+  }, [products]);
+
   return (
     <AutoSizer>
       {({ height, width }) => {
-        // Define the dimensions for each grid cell (and product card).
-        const cardWidth = 220;
-        const cardHeight = 320;
-
-        // Calculate the number of columns that can fit in the available width.
+        // Detect mobile screen (width < 768px)
+        const isMobile = width < 768;
+        
+        // Responsive card dimensions
+        const cardWidth = isMobile ? 110 : 220;
+        const cardHeight = isMobile ? 190 : 320;
+        
         const numColumns = Math.max(Math.floor(width / cardWidth), 1);
         const numRows = Math.ceil(products.length / numColumns);
 
@@ -70,59 +199,11 @@ function VirtualisedProductGrid({ products }) {
             rowCount={numRows}
             rowHeight={cardHeight}
             width={width}
+            overscanRowCount={2}
+            overscanColumnCount={1}
+            itemData={{ numColumns, isMobile }}
           >
-            {({ columnIndex, rowIndex, style }) => {
-              const index = rowIndex * numColumns + columnIndex;
-              if (index >= products.length) {
-                return null;
-              }
-              const product = products[index];
-
-              // Image container is left as is, with fixed dimensions.
-              const imageContainerStyle = {
-                position: "relative",
-                width: "175px",
-                height: "175px",
-                borderRadius: "4px",
-                marginBottom: "10px",
-                overflow: "hidden", // Clip any overflow
-              };
-
-              return (
-                <div style={style}>
-                  {/* 
-                    Wrap the Link in a container that applies padding.
-                    This padding acts as a gap between grid cells 
-                    while the grid cell (style from react-window) stays the same size.
-                  */}
-                  <div
-                    style={{
-                      padding: "10px",
-                      width: "100%",
-                      height: "100%",
-                      boxSizing: "border-box",
-                    }}
-                  >
-                    <Link href={`/products/${product.sku}`} style={productCardStyle}>
-                      {product.front_image && (
-                        <div style={imageContainerStyle}>
-                          <Image
-                            src={product.front_image}
-                            alt={product.product_name}
-                            fill
-                            style={{ objectFit: "cover" }} // or "contain" as desired
-                          />
-                        </div>
-                      )}
-                      <div style={productTitleStyle}>
-                        {product.product_name}
-                      </div>
-                      <div style={productSkuStyle}>SKU: {product.sku}</div>
-                    </Link>
-                  </div>
-                </div>
-              );
-            }}
+            {Cell}
           </Grid>
         );
       }}

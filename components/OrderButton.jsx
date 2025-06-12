@@ -24,6 +24,11 @@ export default function OrderButton({ order, formattedDate }) {
       borderColor: "#14b8a6",
       platformColor: "#14b8a6"
     },
+    Amazon: {
+      backgroundColor: "#fef8f1",
+      borderColor: "#F19E38",
+      platformColor: "#F19E38"
+    },
   };
 
   // Get the styling for the order's platform
