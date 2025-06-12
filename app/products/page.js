@@ -179,8 +179,8 @@ function ProductGrid({ products }) {
   const gridStyle = {
     display: 'grid',
     gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(220px, 1fr))',
-    gap: '10px',
-    padding: '20px 0',
+    gap: isMobile ? '8px' : '10px',
+    padding: isMobile ? '20px 10px' : '20px 0',
   };
 
   return (
