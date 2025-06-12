@@ -78,18 +78,29 @@ function ImagePlaceholder() {
 }
 
 // Optimized product card component
-const ProductCard = ({ product, isMobile }) => {
+const ProductCard = ({ product, screenSize }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // Responsive image container dimensions
-  const imageSize = isMobile ? "120px" : "175px";
+  // Responsive image container dimensions based on screen size
+  const getImageSize = () => {
+    switch (screenSize) {
+      case 'xs':
+        return "100px";
+      case 'mobile':
+        return "120px";
+      default:
+        return "175px";
+    }
+  };
+
+  const imageSize = getImageSize();
   const imageContainerStyle = {
     position: "relative",
     width: imageSize,
     height: imageSize,
     borderRadius: "4px",
-    marginBottom: isMobile ? "5px" : "10px",
+    marginBottom: screenSize === 'xs' ? "4px" : screenSize === 'mobile' ? "5px" : "10px",
     overflow: "hidden",
   };
 
@@ -102,9 +113,42 @@ const ProductCard = ({ product, isMobile }) => {
     setImageLoaded(true);
   }, []);
 
+  const getPadding = () => {
+    switch (screenSize) {
+      case 'xs':
+        return "6px";
+      case 'mobile':
+        return "8px";
+      default:
+        return "10px";
+    }
+  };
+
+  const getTitleFontSize = () => {
+    switch (screenSize) {
+      case 'xs':
+        return "0.65rem";
+      case 'mobile':
+        return "0.75rem";
+      default:
+        return "0.875rem";
+    }
+  };
+
+  const getSkuFontSize = () => {
+    switch (screenSize) {
+      case 'xs':
+        return "0.6rem";
+      case 'mobile':
+        return "0.65rem";
+      default:
+        return "0.75rem";
+    }
+  };
+
   return (
     <div style={{
-      padding: "10px",
+      padding: getPadding(),
       width: "100%",
       height: "100%",
       boxSizing: "border-box",
@@ -118,7 +162,7 @@ const ProductCard = ({ product, isMobile }) => {
                   src={product.front_image}
                   alt={product.product_name}
                   fill
-                  sizes={isMobile ? "120px" : "175px"}
+                  sizes={imageSize}
                   priority={false}
                   loading="lazy"
                   quality={75}
@@ -137,12 +181,12 @@ const ProductCard = ({ product, isMobile }) => {
           </div>
           <div style={{
             ...productTitleStyle,
-            fontSize: isMobile ? "0.75rem" : "0.875rem",
-            lineHeight: isMobile ? "1.1" : "1.2",
-            maxHeight: isMobile ? "2.2rem" : "auto",
+            fontSize: getTitleFontSize(),
+            lineHeight: screenSize === 'xs' ? "1.0" : screenSize === 'mobile' ? "1.1" : "1.2",
+            maxHeight: screenSize === 'xs' ? "1.8rem" : screenSize === 'mobile' ? "2.2rem" : "auto",
             overflow: "hidden",
             display: "-webkit-box",
-            WebkitLineClamp: isMobile ? 2 : 3,
+            WebkitLineClamp: screenSize === 'xs' ? 2 : screenSize === 'mobile' ? 2 : 3,
             WebkitBoxOrient: "vertical",
             textOverflow: "ellipsis"
           }}>
@@ -150,7 +194,7 @@ const ProductCard = ({ product, isMobile }) => {
           </div>
           <div style={{
             ...productSkuStyle,
-            fontSize: isMobile ? "0.65rem" : "0.75rem",
+            fontSize: getSkuFontSize(),
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap"
@@ -162,12 +206,19 @@ const ProductCard = ({ product, isMobile }) => {
 
 // Regular grid component for the product cards
 function ProductGrid({ products }) {
-  const [isMobile, setIsMobile] = useState(false);
+  const [screenSize, setScreenSize] = useState('desktop');
 
-  // Detect mobile screen size
+  // Detect screen size with multiple breakpoints
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      const width = window.innerWidth;
+      if (width < 425) {
+        setScreenSize('xs');
+      } else if (width < 768) {
+        setScreenSize('mobile');
+      } else {
+        setScreenSize('desktop');
+      }
     };
     
     handleResize();
@@ -176,17 +227,28 @@ function ProductGrid({ products }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const getGridColumns = () => {
+    switch (screenSize) {
+      case 'xs':
+        return 'repeat(2, 1fr)';
+      case 'mobile':
+        return 'repeat(2, 1fr)';
+      default:
+        return 'repeat(auto-fill, minmax(220px, 1fr))';
+    }
+  };
+
   const gridStyle = {
     display: 'grid',
-    gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(220px, 1fr))',
-    gap: isMobile ? '8px' : '10px',
-    padding: isMobile ? '20px 10px' : '20px 0',
+    gridTemplateColumns: getGridColumns(),
+    gap: screenSize === 'xs' ? '6px' : screenSize === 'mobile' ? '8px' : '10px',
+    padding: screenSize === 'xs' ? '15px 5px' : screenSize === 'mobile' ? '20px 10px' : '20px 0',
   };
 
   return (
     <div style={gridStyle}>
       {products.map((product) => (
-        <ProductCard key={product.sku} product={product} isMobile={isMobile} />
+        <ProductCard key={product.sku} product={product} screenSize={screenSize} />
       ))}
     </div>
   );
