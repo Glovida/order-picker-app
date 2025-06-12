@@ -189,18 +189,23 @@ function VirtualisedProductGrid({ products }) {
         const cardHeight = isMobile ? 190 : 320;
         
         const numColumns = Math.max(Math.floor(width / cardWidth), 1);
-        const numRows = Math.ceil(products.length / numColumns);
+        const numRows = products.length === 0 ? 0 : Math.ceil(products.length / numColumns);
+
+        if (products.length === 0) {
+          return null;
+        }
 
         return (
           <Grid
+            key={`grid-${products.length}-${numColumns}`}
             columnCount={numColumns}
             columnWidth={cardWidth}
             height={height}
             rowCount={numRows}
             rowHeight={cardHeight}
             width={width}
-            overscanRowCount={2}
-            overscanColumnCount={1}
+            overscanRowCount={1}
+            overscanColumnCount={0}
             itemData={{ numColumns, isMobile }}
           >
             {Cell}
@@ -216,10 +221,22 @@ function ProductsPageContent() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Filter products by SKU, product name, or barcode_number.
+  // Also filter out empty/invalid products from Google Sheets
   const filteredProducts = useMemo(() => {
+    // First filter out empty/invalid products
+    const validProducts = products.filter((product) => {
+      return product && 
+             product.sku && 
+             String(product.sku).trim() !== "" &&
+             product.product_name && 
+             String(product.product_name).trim() !== "";
+    });
+
+    // Then apply search filter if needed
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return products;
-    return products.filter((product) => {
+    if (!term) return validProducts;
+    
+    return validProducts.filter((product) => {
       const sku = String(product.sku || "").toLowerCase();
       const name = String(product.product_name || "").toLowerCase();
       const barcode = String(product.barcode_number || "").toLowerCase();
