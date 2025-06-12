@@ -124,38 +124,40 @@ export default function Home() {
     });
   }, [orders, searchTerm]);
 
-  const pendingOrders = searchFilteredOrders.filter(
-    (order) => String(order.status || "").toLowerCase() === "pending"
-  );
-  const doneOrders = searchFilteredOrders.filter(
-    (order) => String(order.status || "").toLowerCase() === "done"
-  );
-
-  // Group pending orders by platform (used when filter is "All")
-  const pendingByPlatform = pendingOrders.reduce((acc, order) => {
-    const platform = order.platform;
-    if (!acc[platform]) acc[platform] = [];
-    acc[platform].push(order);
-    return acc;
-  }, {});
-
-  let displayPending = [];
-  let displayDone = [];
-
-  if (currentFilter === "All") {
-    displayPending = pendingOrders;
-    displayDone = doneOrders;
-  } else if (currentFilter === "Done") {
-    displayPending = [];
-    displayDone = doneOrders;
-  } else {
-    displayPending = pendingOrders.filter(
-      (order) => order.platform === currentFilter
+  // Memoize filtered orders by status
+  const { pendingOrders, doneOrders } = useMemo(() => {
+    const pending = searchFilteredOrders.filter(
+      (order) => String(order.status || "").toLowerCase() === "pending"
     );
-    displayDone = doneOrders.filter(
-      (order) => order.platform === currentFilter
+    const done = searchFilteredOrders.filter(
+      (order) => String(order.status || "").toLowerCase() === "done"
     );
-  }
+    return { pendingOrders: pending, doneOrders: done };
+  }, [searchFilteredOrders]);
+
+  // Memoize pending orders grouped by platform
+  const pendingByPlatform = useMemo(() => {
+    return pendingOrders.reduce((acc, order) => {
+      const platform = order.platform;
+      if (!acc[platform]) acc[platform] = [];
+      acc[platform].push(order);
+      return acc;
+    }, {});
+  }, [pendingOrders]);
+
+  // Memoize display orders based on current filter
+  const { displayPending, displayDone } = useMemo(() => {
+    if (currentFilter === "All") {
+      return { displayPending: pendingOrders, displayDone: doneOrders };
+    } else if (currentFilter === "Done") {
+      return { displayPending: [], displayDone: doneOrders };
+    } else {
+      return {
+        displayPending: pendingOrders.filter(order => order.platform === currentFilter),
+        displayDone: doneOrders.filter(order => order.platform === currentFilter)
+      };
+    }
+  }, [currentFilter, pendingOrders, doneOrders]);
 
   return (
     <div style={{ minHeight: "100vh" }}>

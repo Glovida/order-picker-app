@@ -1,6 +1,6 @@
 // pages/api/updateBarcode.js
 
-import { google } from "googleapis";
+import { getGoogleSheetsClient } from "../../lib/googleSheets";
 
 // Enable caching for production
 export const dynamic = 'force-static';
@@ -19,17 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Set up Google Sheets API authentication using your service account details
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        // Replace literal "\n" with actual newlines if necessary
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-      },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
-
-    const sheets = google.sheets({ version: "v4", auth });
+    const sheets = await getGoogleSheetsClient();
 
     // Retrieve the sheet data (assumes SKU is in column A and barcode is to be updated in column D)
     const getResponse = await sheets.spreadsheets.values.get({

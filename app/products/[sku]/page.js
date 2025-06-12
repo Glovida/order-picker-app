@@ -44,7 +44,7 @@ function ImagePlaceholder({ width = "300px", height = "300px" }) {
 export default function ProductDetailPage() {
   const { sku } = useParams();
   const router = useRouter();
-  const { products, setProducts, refreshProducts } = useProducts();
+  const { products, setProducts } = useProducts();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -90,12 +90,14 @@ export default function ProductDetailPage() {
       }
     }
 
+    if (!sku) return;
+
     // Reset image states when product changes
     setImageLoaded(false);
     setImageError(false);
 
     // First, try to get the product from the global context.
-    if (sku && products.length > 0) {
+    if (products.length > 0) {
       const found = products.find(
         (p) =>
           String(p.sku).trim().toLowerCase() ===
@@ -108,10 +110,16 @@ export default function ProductDetailPage() {
         return;
       }
     }
-    // Otherwise, fallback to fetching the product data.
-    if (sku) {
-      fetchProductFallback();
+    
+    // Only fetch from API if not found in context and context has been loaded
+    // If products array is empty, it means ProductsContext is still loading
+    if (products.length === 0) {
+      // Wait for ProductsContext to load first
+      return;
     }
+    
+    // Product not found in context, fallback to API
+    fetchProductFallback();
   }, [sku, products]);
 
   // Called when "Save" is confirmed
@@ -138,12 +146,6 @@ export default function ProductDetailPage() {
         setProducts((prevProducts) =>
           prevProducts.map((p) => (p.sku === product.sku ? updatedProduct : p))
         );
-
-        // Ensure the latest data is fetched
-        refreshProducts();
-
-        // Refresh Next.js router to trigger UI updates
-        router.refresh();
       } else {
         console.error("Failed to update barcode");
       }
