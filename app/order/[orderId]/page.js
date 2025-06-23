@@ -26,7 +26,8 @@ export default function OrderDetail() {
     }
     // If not found in context, fetch the order data from the API
     if (orderId) {
-      fetch(API_URL)
+      const controller = new AbortController();
+      fetch(API_URL, { signal: controller.signal })
         .then((res) => res.json())
         .then((data) => {
           const found = data.orders.find(
@@ -36,7 +37,15 @@ export default function OrderDetail() {
             setOrder(found);
           }
         })
-        .catch((err) => console.error("Error fetching order:", err));
+        .catch((err) => {
+          if (err.name !== "AbortError") {
+            console.error("Error fetching order:", err);
+          }
+        });
+      
+      return () => {
+        controller.abort();
+      };
     }
   }, [orderId, orders]);
 

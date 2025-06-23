@@ -67,10 +67,10 @@ export default function ProductDetailPage() {
   }, []);
 
   useEffect(() => {
-    async function fetchProductFallback() {
+    async function fetchProductFallback(signal) {
       try {
         setIsLoading(true);
-        const res = await fetch(API_PRODUCTS_URL);
+        const res = await fetch(API_PRODUCTS_URL, { signal });
         const data = await res.json();
         if (data.products) {
           const found = data.products.find(
@@ -84,13 +84,19 @@ export default function ProductDetailPage() {
           }
         }
       } catch (error) {
-        console.error("Error fetching product fallback:", error);
+        if (error.name !== "AbortError") {
+          console.error("Error fetching product fallback:", error);
+        }
       } finally {
         setIsLoading(false);
       }
     }
 
-    if (!sku) return;
+    if (!sku) {
+      return;
+    }
+
+    const controller = new AbortController();
 
     // Reset image states when product changes
     setImageLoaded(false);
@@ -107,19 +113,28 @@ export default function ProductDetailPage() {
         setProduct(found);
         setBarcodeInput(found.barcode_number || "");
         setIsLoading(false);
-        return;
+        // Return cleanup function even for early returns
+        return () => {
+          controller.abort();
+        };
       }
     }
     
     // Only fetch from API if not found in context and context has been loaded
     // If products array is empty, it means ProductsContext is still loading
     if (products.length === 0) {
-      // Wait for ProductsContext to load first
-      return;
+      // Wait for ProductsContext to load first - return cleanup function
+      return () => {
+        controller.abort();
+      };
     }
     
     // Product not found in context, fallback to API
-    fetchProductFallback();
+    fetchProductFallback(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
   }, [sku, products]);
 
   // Called when "Save" is confirmed
@@ -157,11 +172,45 @@ export default function ProductDetailPage() {
   }
 
   if (isLoading) {
-    return <Spinner minHeight="200px" />;
+    return (
+      <div className="card">
+        <div className="card-body text-center py-8">
+          <Spinner minHeight="200px" />
+          <p className="mt-4">Loading product details...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!product) {
-    return <p>Product not found</p>;
+    return (
+      <div className="card">
+        <div className="card-body text-center py-8">
+          <svg 
+            width="48" 
+            height="48" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="var(--gray-400)" 
+            strokeWidth="1.5"
+            style={{ margin: "0 auto var(--space-4)" }}
+          >
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <h3 style={{ color: "var(--gray-600)" }}>Product not found</h3>
+          <p style={{ color: "var(--gray-500)" }}>
+            The product with SKU &quot;{sku}&quot; could not be found.
+          </p>
+          <button 
+            onClick={() => router.back()} 
+            className="btn btn-primary mt-4"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

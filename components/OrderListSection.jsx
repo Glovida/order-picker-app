@@ -1,5 +1,5 @@
 "use client";
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useMemo } from "react";
 
 // OrderListComponent renders the order list based on props.
 const OrderListComponent = ({
@@ -10,6 +10,38 @@ const OrderListComponent = ({
   formatSingaporeTime,
   OrderButton,
 }) => {
+  // Memoize formatted dates to prevent repeated calculations
+  const formattedDates = useMemo(() => {
+    const dateMap = new Map();
+    
+    // Helper function to add dates, memoized to prevent recreation
+    const addDates = (orders) => {
+      if (!Array.isArray(orders)) return;
+      orders.forEach(order => {
+        if (order?.dateTimeConversion && order?.orderNumber && !dateMap.has(order.orderNumber)) {
+          try {
+            dateMap.set(order.orderNumber, formatSingaporeTime(order.dateTimeConversion));
+          } catch (error) {
+            console.warn('Error formatting date for order:', order.orderNumber, error);
+          }
+        }
+      });
+    };
+    
+    // Only process the orders we actually need based on current filter
+    if (currentFilter === "All") {
+      addDates(displayPending);
+      addDates(displayDone);
+    } else if (currentFilter === "Done") {
+      addDates(displayDone);
+    } else {
+      // For platform-specific filters, only process those orders
+      addDates(displayPending);
+      addDates(displayDone);
+    }
+    
+    return dateMap;
+  }, [displayPending, displayDone, currentFilter, formatSingaporeTime]);
   if (currentFilter === "All") {
     return (
       <>
@@ -29,9 +61,7 @@ const OrderListComponent = ({
                         <li key={order.orderNumber}>
                           <OrderButton
                             order={order}
-                            formattedDate={formatSingaporeTime(
-                              order.dateTimeConversion
-                            )}
+                            formattedDate={formattedDates.get(order.orderNumber)}
                           />
                         </li>
                       ))}
@@ -54,9 +84,7 @@ const OrderListComponent = ({
                       <li key={order.orderNumber}>
                         <OrderButton
                           order={order}
-                          formattedDate={formatSingaporeTime(
-                            order.dateTimeConversion
-                          )}
+                          formattedDate={formattedDates.get(order.orderNumber)}
                         />
                       </li>
                     ))}
@@ -73,9 +101,7 @@ const OrderListComponent = ({
                 <li key={order.orderNumber}>
                   <OrderButton
                     order={order}
-                    formattedDate={formatSingaporeTime(
-                      order.dateTimeConversion
-                    )}
+                    formattedDate={formattedDates.get(order.orderNumber)}
                   />
                 </li>
               ))}
@@ -98,9 +124,7 @@ const OrderListComponent = ({
                     <li key={order.orderNumber}>
                       <OrderButton
                         order={order}
-                        formattedDate={formatSingaporeTime(
-                          order.dateTimeConversion
-                        )}
+                        formattedDate={formattedDates.get(order.orderNumber)}
                       />
                     </li>
                   ))}
@@ -115,9 +139,7 @@ const OrderListComponent = ({
                     <li key={order.orderNumber}>
                       <OrderButton
                         order={order}
-                        formattedDate={formatSingaporeTime(
-                          order.dateTimeConversion
-                        )}
+                        formattedDate={formattedDates.get(order.orderNumber)}
                       />
                     </li>
                   ))}
@@ -140,7 +162,7 @@ const OrderListComponent = ({
             <li key={order.orderNumber}>
               <OrderButton
                 order={order}
-                formattedDate={formatSingaporeTime(order.dateTimeConversion)}
+                formattedDate={formattedDates.get(order.orderNumber)}
               />
             </li>
           ))}
@@ -151,15 +173,8 @@ const OrderListComponent = ({
   return null;
 };
 
-// Simulate lazy loading of the order list component (with a 1.5 sec delay)
-const LazyOrderList = lazy(
-  () =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ default: OrderListComponent });
-      }, 1500);
-    })
-);
+// Lazy loading of the order list component
+const LazyOrderList = lazy(() => Promise.resolve({ default: OrderListComponent }));
 
 // A fallback spinner for the order list section
 const SpinnerFallback = () => (

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 
@@ -11,9 +11,14 @@ export default function SearchBox({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
-  const toggleMenu = () => {
+  const toggleMenu = useCallback(() => {
     setIsMenuOpen((prev) => !prev);
-  };
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    setLogoutLoading(true);
+    signOut({ callbackUrl: "/login" });
+  }, []);
 
   return (
     <>
@@ -36,6 +41,9 @@ export default function SearchBox({
       >
         <button
           onClick={toggleMenu}
+          aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={isMenuOpen}
+          aria-controls="navigation-menu"
           style={{
             padding: "var(--space-2)",
             minWidth: "auto",
@@ -58,7 +66,6 @@ export default function SearchBox({
             e.target.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
             e.target.style.borderColor = "rgba(255, 255, 255, 0.2)";
           }}
-          aria-label="Open Menu"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="3" y1="6" x2="21" y2="6"/>
@@ -100,7 +107,10 @@ export default function SearchBox({
         </div>
       </div>
       {/* Slide-out Menu */}
-      <div
+      <nav
+        id="navigation-menu"
+        role="navigation"
+        aria-label="Main navigation"
         style={{
           position: "fixed",
           top: 0,
@@ -175,10 +185,7 @@ export default function SearchBox({
           {/* Logout Button */}
           <div style={{ marginTop: "auto", paddingTop: "var(--space-6)", borderTop: "1px solid var(--border-color)" }}>
             <button
-              onClick={() => {
-                setLogoutLoading(true);
-                signOut({ callbackUrl: "/login" });
-              }}
+              onClick={handleLogout}
               disabled={logoutLoading}
               className="flex items-center gap-4"
               style={{
@@ -211,7 +218,7 @@ export default function SearchBox({
             </button>
           </div>
         </div>
-      </div>
+      </nav>
       {/* Backdrop overlay */}
       {isMenuOpen && (
         <div

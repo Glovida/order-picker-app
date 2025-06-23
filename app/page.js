@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
+import { useEffect, useState, useMemo, useCallback, Suspense, useRef } from "react";
 import SearchBox from "../components/SearchBox";
 import FilterButtons from "../components/FilterButtons";
 import OrderListSection from "../components/OrderListSection";
@@ -11,16 +11,21 @@ import { useOrders } from "../components/OrdersContext";
 
 // Helper function to format an ISO date string to Singapore time (dd/mm/yyyy hh:mm)
 function formatSingaporeTime(dateString) {
-  const options = {
+  // Create date and explicitly convert to Singapore timezone
+  const date = new Date(dateString);
+  
+  // Use Intl.DateTimeFormat for more reliable timezone handling
+  const formatter = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Singapore",
     day: "2-digit",
-    month: "2-digit",
+    month: "2-digit", 
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  };
-  return new Date(dateString).toLocaleString("en-GB", options).replace(",", "");
+  });
+  
+  return formatter.format(date).replace(",", "");
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -30,6 +35,11 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentFilter, setCurrentFilter] = useState("All");
+  
+  // Refs to manage AbortControllers for concurrent operations
+  const fetchOrdersControllerRef = useRef(null);
+  const fetchAndSaveControllerRef = useRef(null);
+  const updateTrackingControllerRef = useRef(null);
 
   // Async data fetching with AbortController for cancellation
   const fetchOrders = useCallback(async (signal) => {
@@ -51,36 +61,75 @@ export default function Home() {
 
   useEffect(() => {
     const controller = new AbortController();
+    fetchOrdersControllerRef.current = controller;
     fetchOrders(controller.signal);
     return () => {
       controller.abort();
+      fetchOrdersControllerRef.current = null;
     };
-  }, [setOrders, fetchOrders]);
+  }, [fetchOrders]);
+
+  // Cleanup all controllers on unmount
+  useEffect(() => {
+    return () => {
+      [fetchOrdersControllerRef, fetchAndSaveControllerRef, updateTrackingControllerRef].forEach(ref => {
+        if (ref.current) {
+          ref.current.abort();
+          ref.current = null;
+        }
+      });
+    };
+  }, []);
 
   // Refresh orders function
-  const handleFetchAndSaveOrders = async () => {
+  const handleFetchAndSaveOrders = useCallback(async () => {
+    // Cancel previous fetch and save operation if running
+    if (fetchAndSaveControllerRef.current) {
+      fetchAndSaveControllerRef.current.abort();
+    }
+    
+    const controller = new AbortController();
+    fetchAndSaveControllerRef.current = controller;
+    
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}?action=fetchAndSaveOrders`);
+      const res = await fetch(`${API_URL}?action=fetchAndSaveOrders`, { signal: controller.signal });
       const data = await res.json();
       if (data.success) {
         alert("Orders fetched and saved successfully!");
-        fetchOrders();
+        // Cancel previous fetchOrders call before making new one
+        if (fetchOrdersControllerRef.current) {
+          fetchOrdersControllerRef.current.abort();
+        }
+        const fetchController = new AbortController();
+        fetchOrdersControllerRef.current = fetchController;
+        fetchOrders(fetchController.signal);
       } else {
         alert("Failed to fetch and save orders: " + data.error);
       }
     } catch (err) {
-      console.error("Error triggering fetchAndSaveOrders:", err);
-      alert("Error triggering fetchAndSaveOrders: " + err.message);
+      if (err.name !== "AbortError") {
+        console.error("Error triggering fetchAndSaveOrders:", err);
+        alert("Error triggering fetchAndSaveOrders: " + err.message);
+      }
     } finally {
       setIsLoading(false);
+      fetchAndSaveControllerRef.current = null;
     }
-  };
+  }, [fetchOrders]);
 
-  const handleUpdateMissingTrackingNumbers = async () => {
+  const handleUpdateMissingTrackingNumbers = useCallback(async () => {
+    // Cancel previous tracking update operation if running
+    if (updateTrackingControllerRef.current) {
+      updateTrackingControllerRef.current.abort();
+    }
+    
+    const controller = new AbortController();
+    updateTrackingControllerRef.current = controller;
+    
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}?action=updateMissingTrackingNumbers`);
+      const res = await fetch(`${API_URL}?action=updateMissingTrackingNumbers`, { signal: controller.signal });
       const text = await res.text(); // Get the raw response text
       console.log("Raw API response:", text); // Log raw response
 
@@ -99,19 +148,28 @@ export default function Home() {
         alert(
           `Tracking numbers refreshed successfully! Updated ${data.updatedOrders} orders.`
         );
-        fetchOrders();
+        // Cancel previous fetchOrders call before making new one
+        if (fetchOrdersControllerRef.current) {
+          fetchOrdersControllerRef.current.abort();
+        }
+        const fetchController = new AbortController();
+        fetchOrdersControllerRef.current = fetchController;
+        fetchOrders(fetchController.signal);
       } else {
         alert(
           `Failed to refresh tracking numbers: ${data.error || "Unknown error"}`
         );
       }
     } catch (err) {
-      console.error("Error triggering updateMissingTrackingNumbers:", err);
-      alert("Error triggering updateMissingTrackingNumbers: " + err.message);
+      if (err.name !== "AbortError") {
+        console.error("Error triggering updateMissingTrackingNumbers:", err);
+        alert("Error triggering updateMissingTrackingNumbers: " + err.message);
+      }
     } finally {
       setIsLoading(false);
+      updateTrackingControllerRef.current = null;
     }
-  };
+  }, [fetchOrders]);
 
   // Memoise filtered orders
   const searchFilteredOrders = useMemo(() => {

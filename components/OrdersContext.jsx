@@ -1,7 +1,7 @@
 // components/OrdersContext.jsx
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useMemo } from "react";
 
 const OrdersContext = createContext({
   orders: [],
@@ -10,8 +10,15 @@ const OrdersContext = createContext({
 
 export function OrdersProvider({ children }) {
   const [orders, setOrders] = useState([]);
+  
+  // Memoize context value to prevent unnecessary re-renders of consumers
+  const contextValue = useMemo(() => ({
+    orders,
+    setOrders
+  }), [orders]);
+
   return (
-    <OrdersContext.Provider value={{ orders, setOrders }}>
+    <OrdersContext.Provider value={contextValue}>
       {children}
     </OrdersContext.Provider>
   );

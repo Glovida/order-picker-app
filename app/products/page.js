@@ -255,34 +255,47 @@ function ProductGrid({ products }) {
 }
 
 function ProductsPageContent() {
-  const { products, isLoading } = useProducts();
+  const { products, isLoading, error, fetchProducts } = useProducts();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Filter products by SKU, product name, or barcode_number.
-  // Also filter out empty/invalid products from Google Sheets
-  const filteredProducts = useMemo(() => {
-    // First filter out empty/invalid products
-    const validProducts = products.filter((product) => {
+  // Fetch products when the page loads (only if not already loaded)
+  useEffect(() => {
+    if (products.length === 0 && !isLoading) {
+      fetchProducts();
+    }
+  }, [fetchProducts, products.length, isLoading]);
+
+  // Memoize valid products separately to avoid recalculating when only search term changes
+  const validProducts = useMemo(() => {
+    return products.filter((product) => {
       return product && 
              product.sku && 
              String(product.sku).trim() !== "" &&
              product.product_name && 
              String(product.product_name).trim() !== "";
     });
+  }, [products]);
 
-    // Then apply search filter if needed
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return validProducts;
+  // Memoize search term processing
+  const normalizedSearchTerm = useMemo(() => {
+    return searchTerm.trim().toLowerCase();
+  }, [searchTerm]);
+
+  // Filter products by SKU, product name, or barcode_number
+  const filteredProducts = useMemo(() => {
+    if (!normalizedSearchTerm) return validProducts;
     
     return validProducts.filter((product) => {
       const sku = String(product.sku || "").toLowerCase();
       const name = String(product.product_name || "").toLowerCase();
       const barcode = String(product.barcode_number || "").toLowerCase();
       return (
-        sku.includes(term) || name.includes(term) || barcode.includes(term)
+        sku.includes(normalizedSearchTerm) || 
+        name.includes(normalizedSearchTerm) || 
+        barcode.includes(normalizedSearchTerm)
       );
     });
-  }, [products, searchTerm]);
+  }, [validProducts, normalizedSearchTerm]);
 
   return (
     <div style={containerStyle}>
@@ -295,7 +308,38 @@ function ProductsPageContent() {
       <div className="container" style={{ marginTop: "80px" }}>
         {/* Products Grid Container */}
         <div>
-          {isLoading ? (
+          {error ? (
+            <div className="card">
+              <div className="card-body text-center py-8">
+                <svg 
+                  width="48" 
+                  height="48" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="var(--error-500)" 
+                  strokeWidth="2"
+                  style={{ margin: "0 auto var(--space-4)" }}
+                >
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="15" y1="9" x2="9" y2="15"/>
+                  <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                <h3 style={{ color: "var(--error-600)", marginBottom: "var(--space-2)" }}>
+                  Failed to load products
+                </h3>
+                <p style={{ color: "var(--gray-600)", marginBottom: "var(--space-4)" }}>
+                  {error}
+                </p>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => fetchProducts(true)}
+                  disabled={isLoading}
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          ) : isLoading ? (
             <div className="card">
               <div className="card-body text-center py-8">
                 <Spinner minHeight="200px" />

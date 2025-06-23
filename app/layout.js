@@ -2,6 +2,7 @@
 import { Providers } from "./providers";
 import { WebVitals } from "../components/WebVitals";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import ErrorBoundary from "../components/ErrorBoundary";
 import "../styles/globals.css";
 import "../styles/Home.module.css";
 
@@ -28,10 +29,12 @@ export default function RootLayout({ children }) {
       <head></head>
       <body style={{ backgroundColor: "#ffffff" }}>
         <WebVitals />
-        <Providers>
-          {children}
-          <SpeedInsights />
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            {children}
+            <SpeedInsights />
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   );

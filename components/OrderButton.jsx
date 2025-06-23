@@ -1,7 +1,12 @@
 // components/OrderButton.jsx
 import Link from "next/link";
+import { useCallback, useState } from "react";
 
 export default function OrderButton({ order, formattedDate }) {
+  // State for image loading error handling
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   // Enhanced platform colors with better contrast and elegance
   const platformStyles = {
     Shopee: {
@@ -45,6 +50,27 @@ export default function OrderButton({ order, formattedDate }) {
   // Status indicator
   const isCompleted = order.status === "done";
 
+  // Image event handlers
+  const handleImageLoad = useCallback(() => {
+    setImageLoaded(true);
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+    setImageLoaded(true);
+  }, []);
+
+  // Memoize mouse event handlers to prevent recreation on every render
+  const handleMouseEnter = useCallback((e) => {
+    e.currentTarget.style.boxShadow = "var(--shadow-md)";
+    e.currentTarget.style.borderColor = platformStyle.platformColor;
+  }, [platformStyle.platformColor]);
+
+  const handleMouseLeave = useCallback((e) => {
+    e.currentTarget.style.boxShadow = "var(--shadow-sm)";
+    e.currentTarget.style.borderColor = platformStyle.borderColor;
+  }, [platformStyle.borderColor]);
+
   return (
     <Link
       href={`/order/${order.orderNumber}`}
@@ -68,14 +94,8 @@ export default function OrderButton({ order, formattedDate }) {
             position: "relative",
             overflow: "hidden",
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = "var(--shadow-md)";
-            e.currentTarget.style.borderColor = platformStyle.platformColor;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = "var(--shadow-sm)";
-            e.currentTarget.style.borderColor = platformStyle.borderColor;
-          }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           {/* Product Image */}
           {firstItemImage && (
@@ -93,15 +113,54 @@ export default function OrderButton({ order, formattedDate }) {
                 justifyContent: "center",
               }}
             >
-              <img
-                src={firstItemImage}
-                alt={order.items[0].productName}
-                style={{
+              {imageError ? (
+                // Error fallback - show placeholder
+                <div style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "contain",
-                }}
-              />
+                  backgroundColor: "var(--gray-100)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--gray-400)"
+                }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21,15 16,10 5,21"/>
+                  </svg>
+                </div>
+              ) : (
+                <>
+                  {!imageLoaded && (
+                    // Loading placeholder
+                    <div style={{
+                      width: "100%",
+                      height: "100%",
+                      backgroundColor: "var(--gray-100)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--gray-400)"
+                    }}>
+                      <div className="spinner" style={{ width: "20px", height: "20px" }}></div>
+                    </div>
+                  )}
+                  <img
+                    src={firstItemImage}
+                    alt={order.items[0]?.productName || "Product image"}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      opacity: imageLoaded ? 1 : 0,
+                      transition: "opacity 0.2s ease-in-out"
+                    }}
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                  />
+                </>
+              )}
             </div>
           )}
           
