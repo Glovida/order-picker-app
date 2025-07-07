@@ -81,6 +81,13 @@ export default function Home() {
     };
   }, []);
 
+  // Reset platform filter when user starts searching
+  useEffect(() => {
+    if (searchTerm.trim() !== "" && currentFilter !== "All") {
+      setCurrentFilter("All");
+    }
+  }, [searchTerm, currentFilter]);
+
   // Refresh orders function
   const handleFetchAndSaveOrders = useCallback(async () => {
     // Cancel previous fetch and save operation if running
