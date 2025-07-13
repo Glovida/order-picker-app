@@ -346,17 +346,6 @@ export default function ProductDetailPage() {
             Barcode: {product.barcode_number}
           </p>
         )}
-
-        {/* Display the barcode image below the barcode number */}
-        {product.barcode_image && (
-          <div style={{ marginTop: "10px" }}>
-            <img
-              src={product.barcode_image}
-              alt="Barcode image"
-              style={{ maxWidth: "300px", height: "auto" }}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
