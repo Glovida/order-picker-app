@@ -5,16 +5,17 @@ import { getToken } from "next-auth/jwt";
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
 
-  // Only protect the homepage ("/") and pages under "/order/"
-  const protect = pathname === "/" || pathname.startsWith("/order/");
+  // Define public routes that should not require authentication
+  const isPublic = pathname.startsWith("/login") ||
+                   pathname.startsWith("/api/auth") ||
+                   pathname.startsWith("/_next/") ||
+                   pathname.includes(".");
 
-  // Always allow requests for public routes (login, api/auth, _next, static files)
-  if (
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/_next/") ||
-    pathname.includes(".")
-  ) {
+  // Protect all routes except the public ones
+  const protect = !isPublic;
+
+  // Always allow requests for public routes
+  if (isPublic) {
     return NextResponse.next();
   }
 
