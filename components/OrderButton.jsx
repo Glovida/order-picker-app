@@ -72,15 +72,27 @@ export default function OrderButton({ order, formattedDate }) {
   }, [platformStyle.borderColor]);
 
   return (
-    <Link
-      href={`/order/${order.orderNumber}`}
-      style={{
-        display: "block",
-        textDecoration: "none",
-        color: "inherit",
-        marginBottom: "var(--space-3)",
-      }}
-    >
+    <>
+      <style jsx>{`
+        @media (max-width: 480px) {
+          .order-header {
+            align-items: flex-start !important;
+          }
+          .completed-badge {
+            order: 1;
+            margin-top: var(--space-1);
+          }
+        }
+      `}</style>
+      <Link
+        href={`/order/${order.orderNumber}`}
+        style={{
+          display: "block",
+          textDecoration: "none",
+          color: "inherit",
+          marginBottom: "var(--space-3)",
+        }}
+      >
       <div
           style={{
             display: "flex",
@@ -166,7 +178,13 @@ export default function OrderButton({ order, formattedDate }) {
           
           {/* Order Information */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-1)" }}>
+            <div className="order-header" style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "var(--space-2)", 
+              marginBottom: "var(--space-1)",
+              flexWrap: "wrap"
+            }}>
               <h3 style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
@@ -177,7 +195,7 @@ export default function OrderButton({ order, formattedDate }) {
                 Order #{order.orderNumber}
               </h3>
               {isCompleted && (
-                <span style={{
+                <span className="completed-badge" style={{
                   backgroundColor: "var(--success-100)",
                   color: "var(--success-700)",
                   padding: "var(--space-1) var(--space-2)",
@@ -249,6 +267,7 @@ export default function OrderButton({ order, formattedDate }) {
             </svg>
           </div>
         </div>
-    </Link>
+      </Link>
+    </>
   );
 }

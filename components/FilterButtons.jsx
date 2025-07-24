@@ -40,14 +40,17 @@ export default function FilterButtons({
             display: "flex",
             alignItems: "center",
             gap: "var(--space-2)",
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
           <span 
             className={filter === "Done" ? "badge badge-done" : "badge badge-pending"}
             style={{ 
-              minWidth: "24px",
+              minWidth: "20px",
               fontSize: "0.75rem",
-              fontWeight: "600"
+              fontWeight: "600",
+              textAlign: "center"
             }}
           >
             {count}
@@ -61,7 +64,11 @@ export default function FilterButtons({
   return (
     <div className="card">
       <div className="card-body">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" style={{
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
+          width: '100%'
+        }}>
           {filterButtons}
         </div>
       </div>

@@ -310,6 +310,10 @@ label {
   flex-direction: column;
 }
 
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
 .items-center {
   align-items: center;
 }
@@ -372,8 +376,9 @@ label {
 
 @media (max-width: 480px) {
   .btn {
-    padding: var(--space-2) var(--space-4);
+    padding: var(--space-2) var(--space-3);
     font-size: 0.75rem;
+    min-width: auto;
   }
   
   .btn-lg {
@@ -388,7 +393,30 @@ label {
   }
   
   .flex.gap-4 {
-    gap: var(--space-2);
+    gap: var(--space-1);
+  }
+  
+  .flex.gap-2 {
+    gap: var(--space-1);
+  }
+}
+
+/* Extra small screens - ensure all buttons fit */
+@media (max-width: 360px) {
+  .btn {
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.7rem;
+    min-width: auto;
+  }
+  
+  .badge {
+    padding: 2px var(--space-2);
+    font-size: 0.65rem;
+    min-width: 20px;
+  }
+  
+  .card-body {
+    padding: var(--space-3);
   }
 }
 
